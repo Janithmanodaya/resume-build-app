@@ -737,7 +737,7 @@ async def main() -> None:
                 MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)
             ],
             States.CHOOSING_INPUT_METHOD: [
-                MessageHandler(filters.Regex("^(📝 Step-by-step|🤖 Smart Paste \(AI\))$"), handle_input_method_choice)
+                MessageHandler(filters.Regex(r"^(📝 Step-by-step|🤖 Smart Paste (AI))$"), handle_input_method_choice)
             ],
             States.UPLOADING_PHOTO: [
                 MessageHandler(filters.PHOTO, handle_photo)
@@ -822,3 +822,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
