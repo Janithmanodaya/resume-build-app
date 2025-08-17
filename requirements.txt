@@ -4,3 +4,4 @@ weasyprint
 jinja2
 python-dotenv
 Flask
+aiohttp
