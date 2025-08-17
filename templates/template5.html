@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            background: #fff;
+            color: #444;
+        }
+        .container {
+            display: flex;
+            width: 210mm;
+            min-height: 297mm;
+        }
+        .sidebar {
+            width: 33%;
+            background-color: #1e2a3a;
+            color: #f0f0f0;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 67%;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .profile-img {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            display: block;
+            border: 4px solid {{ accent_color | default('#00aaff') }};
+        }
+        .name {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+        .occupation {
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ccc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        .sidebar-section h2 {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.3em;
+            color: {{ accent_color | default('#00aaff') }};
+            border-bottom: 1px solid #445;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .contact-info p {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+        }
+        .contact-info i {
+            font-size: 1.1em;
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            color: {{ accent_color | default('#00aaff') }};
+        }
+        .skills ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .skills li {
+            margin-bottom: 8px;
+        }
+        .main-content h2 {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.6em;
+            color: #1e2a3a;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 25px;
+            border-left: 2px solid {{ accent_color | default('#00aaff') }};
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            background-color: {{ accent_color | default('#00aaff') }};
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+        .timeline-item h3 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        .timeline-item .meta {
+            margin: 3px 0 8px;
+        }
+        .timeline-item .company, .timeline-item .university {
+            font-weight: 500;
+            color: #555;
+        }
+        .timeline-item .date {
+            font-style: italic;
+            color: #777;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .timeline-item ul {
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            {% if photo_path %}
+            <img src="{{ photo_path }}" alt="Profile Photo" class="profile-img">
+            {% endif %}
+            <h1 class="name">{{ name | e }}</h1>
+            <h2 class="occupation">{{ occupation | default('Professional') }}</h2>
+
+            <div class="sidebar-section contact-info">
+                <h2>Contact</h2>
+                <p><i class="fas fa-envelope"></i><span>{{ email | e }}</span></p>
+                <p><i class="fas fa-phone"></i><span>{{ phone | e }}</span></p>
+            </div>
+
+            {% if skills %}
+            <div class="sidebar-section skills">
+                <h2>Skills</h2>
+                <ul>
+                    {% for skill in skills %}
+                    <li>{{ skill.name | e }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        <div class="main-content">
+            {% if summary %}
+            <div class="section summary">
+                <h2>Summary</h2>
+                <p>{{ summary | e }}</p>
+            </div>
+            {% endif %}
+
+            {% if about_me %}
+            <div class="section about-me">
+                <h2>About Me</h2>
+                <p>{{ about_me | e }}</p>
+            </div>
+            {% endif %}
+
+            {% if experience %}
+            <div class="section experience">
+                <h2>Work Experience</h2>
+                {% for exp in experience %}
+                {% set parts = exp.split(',') %}
+                <div class="timeline-item">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <div class="meta">
+                        <span class="company">{{ parts[1] | default('', true) | e }}</span>
+                        <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                    </div>
+                    <ul>
+                        <li>{{ parts[3] | default('', true) | e }}</li>
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if education %}
+            <div class="section education">
+                <h2>Education</h2>
+                {% for edu in education %}
+                {% set parts = edu.split(',') %}
+                <div class="timeline-item">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <div class="meta">
+                        <span class="university">{{ parts[1] | default('', true) | e }}</span>
+                        <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

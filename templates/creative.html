@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600&display=swap');
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1.6;
+            color: #444;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            width: 210mm;
+            height: 297mm;
+            background-color: #fff;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .sidebar {
+            width: 38%;
+            background-color: {{ accent_color | default('#2c3e50') }};
+            color: #fff;
+            padding: 40px 30px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 62%;
+            padding: 40px 30px;
+            box-sizing: border-box;
+        }
+        .profile-img {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            display: block;
+            border: 6px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .name {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5em;
+            text-align: center;
+            margin: 0 0 10px 0;
+            line-height: 1.2;
+        }
+        .sidebar h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4em;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .contact-info p {
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .skills ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+        .skills li {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .main-content h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8em;
+            color: {{ accent_color | default('#2c3e50') }};
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .experience-item, .education-item {
+            margin-bottom: 25px;
+            padding-left: 20px;
+            border-left: 3px solid {{ accent_color | default('#2c3e50') }};
+        }
+        .experience-item h3, .education-item h3 {
+            margin: 0 0 2px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: {{ accent_color | default('#2c3e50') }};
+        }
+        .experience-item .company, .education-item .university {
+            font-weight: 600;
+            color: #555;
+        }
+        .experience-item .date, .education-item .date {
+            font-style: italic;
+            color: #777;
+            font-size: 0.9em;
+        }
+        .experience-item .description {
+            margin-top: 8px;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            {% if photo_path %}
+            <img src="{{ photo_path }}" alt="Profile Photo" class="profile-img">
+            {% endif %}
+            <h1 class="name">{{ name | e }}</h1>
+
+            <div class="section contact-info">
+                <h2>Contact</h2>
+                <p>{{ email | e }}</p>
+                <p>{{ phone | e }}</p>
+            </div>
+
+            {% if skills %}
+            <div class="section skills">
+                <h2>Skills</h2>
+                <ul>
+                    {% for skill in skills %}
+                    <li>{{ skill.name | e }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        <div class="main-content">
+            {% if summary %}
+            <div class="section summary">
+                <h2>Summary</h2>
+                <p>{{ summary | e }}</p>
+            </div>
+            {% endif %}
+
+            {% if experience %}
+            <div class="section experience">
+                <h2>Work Experience</h2>
+                {% for exp in experience %}
+                {% set parts = exp.split(',') %}
+                <div class="experience-item">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <span class="company">{{ parts[1] | default('', true) | e }}</span> | <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                    <div class="description">
+                        {{ parts[3] | default('', true) | e }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if education %}
+            <div class="section education">
+                <h2>Education</h2>
+                {% for edu in education %}
+                {% set parts = edu.split(',') %}
+                <div class="education-item">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <span class="university">{{ parts[1] | default('', true) | e }}</span> | <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
