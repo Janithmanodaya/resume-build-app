@@ -724,7 +724,7 @@ async def handle_smart_approval(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def main() -> None:
-    """Run the bot."""
+    """Run the bot with a webhook."""
     application = Application.builder().token(config.TELEGRAM_TOKEN).build()
 
     conv_handler = ConversationHandler(
@@ -792,17 +792,32 @@ async def main() -> None:
             CommandHandler("cancel", cancel),
             MessageHandler(filters.TEXT & ~filters.COMMAND, invalid_input),
         ],
-)
+    )
 
     application.add_handler(conv_handler)
 
-    logger.info("Starting bot...")
+    logger.info("Starting bot with webhook...")
 
-    # Run the bot until the user presses Ctrl-C
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    await asyncio.Future()  # Keep the script running
+    # Get webhook URL and port from environment variables.
+    # The WEBHOOK_URL is the base URL of the web server, e.g., https://your-app-name.on-render.com
+    webhook_url = os.environ.get("WEBHOOK_URL")
+    if not webhook_url:
+        logger.error("WEBHOOK_URL environment variable not set!")
+        return
+
+    # The port must be specified by the hosting service.
+    port = int(os.environ.get("PORT", 8443))
+
+    # We use the bot token as the url path, which is a common practice.
+    # The full webhook URL will be https://your-app-name.on-render.com/<TELEGRAM_TOKEN>
+    # We also use it as a secret token for an extra layer of security.
+    await application.run_webhook(
+        listen="0.0.0.0",
+        port=port,
+        url_path=config.TELEGRAM_TOKEN,
+        webhook_url=webhook_url,
+        secret_token=config.TELEGRAM_TOKEN,
+    )
 
 
 if __name__ == "__main__":
