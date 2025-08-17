@@ -784,7 +784,7 @@ async def on_startup(app: web.Application):
     
     # Initialize the bot, set the webhook, and start the bot
     await application.initialize()
-    webhook_url = os.environ.get("WEBHOOK_URL")
+    webhook_url = os.environ.get("WEBHOOK_URL", "").rstrip("/")
     if not webhook_url:
         logger.error("WEBHOOK_URL environment variable not set! Webhook not set.")
         return
