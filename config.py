@@ -6,9 +6,10 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+SECRET_TOKEN = os.getenv("SECRET_TOKEN")
 
-if not TELEGRAM_TOKEN or not GEMINI_API_KEY:
-    raise ValueError("API keys not found! Please check your .env file.")
+if not TELEGRAM_TOKEN or not GEMINI_API_KEY or not SECRET_TOKEN:
+    raise ValueError("Required environment variables not found! Please check your .env file for TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, and SECRET_TOKEN.")
 
 # You can add other settings here, like template names
 TEMPLATES = {
