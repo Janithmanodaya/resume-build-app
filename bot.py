@@ -731,7 +731,7 @@ async def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             States.SELECTING_COLOR: [
-                MessageHandler(filters.Regex("^(?i)(blue|green|red|purple)$"), select_color),
+                MessageHandler(filters.Regex("(?i)^(blue|green|red|purple)$"), select_color),
             ],
             States.AWAITING_PHOTO_CHOICE: [
                 MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)
