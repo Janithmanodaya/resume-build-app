@@ -792,7 +792,7 @@ async def on_startup(app: web.Application):
     await application.bot.set_webhook(
         url=f"{webhook_url}/{config.TELEGRAM_TOKEN}",
         allowed_updates=Update.ALL_TYPES,
-        secret_token=config.TELEGRAM_TOKEN
+        secret_token=config.SECRET_TOKEN
     )
     await application.start()
     logger.info("Bot started and webhook is set.")
