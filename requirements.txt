@@ -1,0 +1,5 @@
+python-telegram-bot[job-queue]
+google-generativeai
+weasyprint
+jinja2
+python-dotenv
