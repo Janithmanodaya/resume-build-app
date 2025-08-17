@@ -14,6 +14,8 @@ from telegram.ext import (
 
 
 import config
+from aiohttp import web
+import json
 
 # Enable logging
 logging.basicConfig(
@@ -723,103 +725,100 @@ async def handle_smart_approval(update: Update, context: ContextTypes.DEFAULT_TY
         return States.GETTING_NAME
 
 
-async def main() -> None:
-    """Run the bot with a webhook."""
+async def telegram_webhook_handler(request: web.Request) -> web.Response:
+    """Handle incoming Telegram updates by passing them to the bot application."""
+    application = request.app["bot"]
+    try:
+        data = await request.json()
+        update = Update.de_json(data, application.bot)
+        await application.process_update(update)
+        return web.Response()
+    except json.JSONDecodeError:
+        logger.error("Unable to parse JSON from Telegram update.")
+        return web.Response(body=b"Unable to parse JSON", status=400)
+
+
+async def health_check_handler(_: web.Request) -> web.Response:
+    """A simple health check endpoint for the deployment platform."""
+    return web.Response(text="OK")
+
+
+async def on_startup(app: web.Application):
+    """
+    Actions to take on application startup.
+    - Set up the bot and its handlers.
+    - Set the webhook.
+    - Start the bot.
+    """
     application = Application.builder().token(config.TELEGRAM_TOKEN).build()
 
+    # Conversation handler setup
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            States.SELECTING_COLOR: [
-                MessageHandler(filters.Regex("(?i)^(blue|green|red|purple)$"), select_color),
-            ],
-            States.AWAITING_PHOTO_CHOICE: [
-                MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)
-            ],
-            States.CHOOSING_INPUT_METHOD: [
-                MessageHandler(filters.Regex(r"^(📝 Step-by-step|🤖 Smart Paste (AI))$"), handle_input_method_choice)
-            ],
-            States.UPLOADING_PHOTO: [
-                MessageHandler(filters.PHOTO, handle_photo)
-            ],
-            States.GETTING_NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)
-            ],
-            States.GETTING_CONTACTS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_contacts)
-            ],
-            States.GETTING_SUMMARY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_summary)
-            ],
-            States.AWAITING_SUMMARY_APPROVAL: [
-                MessageHandler(filters.Regex("^(✅ Use AI Version|✍️ Keep My Version)$"), handle_summary_approval)
-            ],
-            States.GETTING_SKILLS: [
-                MessageHandler(filters.Regex("^Done$"), skills_done),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_skill),
-            ],
-            States.GETTING_EXPERIENCE: [
-                MessageHandler(filters.Regex("^Done$"), experience_done),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience),
-            ],
-            States.GETTING_EDUCATION: [
-                MessageHandler(filters.Regex("^Done$"), education_done),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_education),
-            ],
-            States.ASK_FOR_REVIEW: [
-                MessageHandler(filters.Regex("^(✍️ Yes, review my data|👍 No, looks good)$"), handle_review_choice)
-            ],
-            States.ASKING_TAILOR: [
-                MessageHandler(filters.Regex("^(✅ Yes, please!|❌ No, thanks)$"), handle_tailor_choice)
-            ],
-            States.GETTING_JOB_DESCRIPTION: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_job_description)
-            ],
-            States.AWAITING_TAILOR_APPROVAL: [
-                MessageHandler(filters.Regex("^(✅ Apply Changes|❌ Keep Original)$"), handle_tailor_approval)
-            ],
-            States.GETTING_SMART_INPUT: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_all_data)
-            ],
-            States.AWAITING_SMART_APPROVAL: [
-                MessageHandler(filters.Regex("^(✅ Looks Good!|✍️ Edit Manually)$"), handle_smart_approval)
-            ],
-            States.AWAITING_REGENERATION: [
-                MessageHandler(filters.Regex("^(🎨 Regenerate with New Design|✅ Finish)$"), handle_regeneration_choice)
-            ],
+            States.SELECTING_COLOR: [MessageHandler(filters.Regex("(?i)^(blue|green|red|purple)$"), select_color)],
+            States.AWAITING_PHOTO_CHOICE: [MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)],
+            States.CHOOSING_INPUT_METHOD: [MessageHandler(filters.Regex(r"^(📝 Step-by-step|🤖 Smart Paste \(AI\))$"), handle_input_method_choice)],
+            States.UPLOADING_PHOTO: [MessageHandler(filters.PHOTO, handle_photo)],
+            States.GETTING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            States.GETTING_CONTACTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_contacts)],
+            States.GETTING_SUMMARY: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_summary)],
+            States.AWAITING_SUMMARY_APPROVAL: [MessageHandler(filters.Regex("^(✅ Use AI Version|✍️ Keep My Version)$"), handle_summary_approval)],
+            States.GETTING_SKILLS: [MessageHandler(filters.Regex("^Done$"), skills_done), MessageHandler(filters.TEXT & ~filters.COMMAND, get_skill)],
+            States.GETTING_EXPERIENCE: [MessageHandler(filters.Regex("^Done$"), experience_done), MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
+            States.GETTING_EDUCATION: [MessageHandler(filters.Regex("^Done$"), education_done), MessageHandler(filters.TEXT & ~filters.COMMAND, get_education)],
+            States.ASK_FOR_REVIEW: [MessageHandler(filters.Regex("^(✍️ Yes, review my data|👍 No, looks good)$"), handle_review_choice)],
+            States.ASKING_TAILOR: [MessageHandler(filters.Regex("^(✅ Yes, please!|❌ No, thanks)$"), handle_tailor_choice)],
+            States.GETTING_JOB_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_job_description)],
+            States.AWAITING_TAILOR_APPROVAL: [MessageHandler(filters.Regex("^(✅ Apply Changes|❌ Keep Original)$"), handle_tailor_approval)],
+            States.GETTING_SMART_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_all_data)],
+            States.AWAITING_SMART_APPROVAL: [MessageHandler(filters.Regex("^(✅ Looks Good!|✍️ Edit Manually)$"), handle_smart_approval)],
+            States.AWAITING_REGENERATION: [MessageHandler(filters.Regex("^(🎨 Regenerate with New Design|✅ Finish)$"), handle_regeneration_choice)],
         },
-        fallbacks=[
-            CommandHandler("cancel", cancel),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, invalid_input),
-        ],
+        fallbacks=[CommandHandler("cancel", cancel), MessageHandler(filters.TEXT & ~filters.COMMAND, invalid_input)],
     )
-
     application.add_handler(conv_handler)
 
-    logger.info("Starting bot with webhook...")
-
-    # Get webhook URL and port from environment variables.
-    # The WEBHOOK_URL is the base URL of the web server, e.g., https://your-app-name.on-render.com
+    # Store the application instance in the aiohttp app context
+    app["bot"] = application
+    
+    # Initialize the bot, set the webhook, and start the bot
+    await application.initialize()
     webhook_url = os.environ.get("WEBHOOK_URL")
     if not webhook_url:
-        logger.error("WEBHOOK_URL environment variable not set!")
+        logger.error("WEBHOOK_URL environment variable not set! Webhook not set.")
         return
-
-    # The port must be specified by the hosting service.
-    port = int(os.environ.get("PORT", 8443))
-
-    # We use the bot token as the url path, which is a common practice.
-    # The full webhook URL will be https://your-app-name.on-render.com/<TELEGRAM_TOKEN>
-    # We also use it as a secret token for an extra layer of security.
-    await application.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        url_path=config.TELEGRAM_TOKEN,
-        webhook_url=webhook_url,
-        secret_token=config.TELEGRAM_TOKEN,
+        
+    await application.bot.set_webhook(
+        url=f"{webhook_url}/{config.TELEGRAM_TOKEN}",
+        allowed_updates=Update.ALL_TYPES,
+        secret_token=config.TELEGRAM_TOKEN
     )
+    await application.start()
+    logger.info("Bot started and webhook is set.")
+
+
+async def on_shutdown(app: web.Application):
+    """Actions to take on application shutdown."""
+    logger.info("Shutting down the bot...")
+    await app["bot"].stop()
+    await app["bot"].shutdown()
+    logger.info("Bot has been shut down.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    a_app = web.Application()
+    
+    # Register startup and shutdown handlers
+    a_app.on_startup.append(on_startup)
+    a_app.on_shutdown.append(on_shutdown)
+    
+    # Register webhook and health check handlers
+    a_app.router.add_post(f"/{config.TELEGRAM_TOKEN}", telegram_webhook_handler)
+    a_app.router.add_get("/health", health_check_handler)
 
+    # Get port from environment variables
+    port = int(os.environ.get("PORT", 8080))
+    
+    logger.info(f"Starting aiohttp server on port {port}...")
+    web.run_app(a_app, host="0.0.0.0", port=port)
