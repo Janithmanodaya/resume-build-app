@@ -3,3 +3,4 @@ google-generativeai
 weasyprint
 jinja2
 python-dotenv
+Flask
