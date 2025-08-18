@@ -125,8 +125,13 @@
 
             <div class="section contact-info">
                 <h2>Contact</h2>
-                <p>{{ email | e }}</p>
-                <p>{{ phone | e }}</p>
+                <p><strong>Email:</strong> {{ email | e }}</p>
+                <p><strong>Phone:</strong> {{ phone | e }}</p>
+                {% if website %}<p><strong>Web:</strong> {{ website | e }}</p>{% endif %}
+                {% if address %}<p><strong>Address:</strong> {{ address | e }}</p>{% endif %}
+                {% if birthday %}<p><strong>Birthday:</strong> {{ birthday | e }}</p>{% endif %}
+                {% if language %}<p><strong>Language:</strong> {{ language | e }}</p>{% endif %}
+                {% if nic_number %}<p><strong>NIC:</strong> {{ nic_number | e }}</p>{% endif %}
             </div>
 
             {% if skills %}
@@ -141,10 +146,10 @@
             {% endif %}
         </div>
         <div class="main-content">
-            {% if summary %}
-            <div class="section summary">
-                <h2>Summary</h2>
-                <p>{{ summary | e }}</p>
+            {% if about_me %}
+            <div class="section about-me">
+                <h2>About Me</h2>
+                <p>{{ about_me | e }}</p>
             </div>
             {% endif %}
 

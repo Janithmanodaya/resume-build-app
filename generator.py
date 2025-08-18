@@ -9,12 +9,13 @@ from weasyprint import HTML
 import gemini_client
 from config import TEMPLATES
 
-def generate_pdf(user_data: dict, exclude_template: str = None) -> tuple[str, str] | None:
+async def generate_pdf(user_data: dict, selected_template: str = None, exclude_template: str = None) -> tuple[str, str] | None:
     """
     Generates a PDF resume from user data and a template.
 
     Args:
         user_data: A dictionary containing all the user's information.
+        selected_template: The name of a specific template to use.
         exclude_template: The name of a template to exclude from random selection.
 
     Returns:
@@ -31,16 +32,19 @@ def generate_pdf(user_data: dict, exclude_template: str = None) -> tuple[str, st
         # 1. Set up Jinja2 environment with a reliable path to the templates directory
         env = Environment(loader=FileSystemLoader(templates_dir))
 
-        # 2. Select a random template, excluding the one specified
-        available_templates = list(TEMPLATES.keys())
-        if exclude_template and exclude_template in available_templates:
-            available_templates.remove(exclude_template)
-
-        if not available_templates:
-            # Fallback if all templates were excluded (e.g., only one exists)
+        # 2. Select a template
+        if selected_template and selected_template in TEMPLATES:
+            template_name = selected_template
+        else:
             available_templates = list(TEMPLATES.keys())
+            if exclude_template and exclude_template in available_templates:
+                available_templates.remove(exclude_template)
 
-        template_name = random.choice(available_templates)
+            if not available_templates:
+                # Fallback if all templates were excluded (e.g., only one exists)
+                available_templates = list(TEMPLATES.keys())
+
+            template_name = random.choice(available_templates)
         template_path = TEMPLATES[template_name]
         logging.info(f"Randomly selected template: {template_name}")
 
@@ -49,9 +53,13 @@ def generate_pdf(user_data: dict, exclude_template: str = None) -> tuple[str, st
         template = env.get_template(template_filename)
 
         # 3. Generate 'About Me' text and render the HTML template with user data
-        about_me_text = gemini_client.generate_about_me(user_data)
+        about_me_text = await gemini_client.generate_about_me(user_data)
         if about_me_text:
             user_data['about_me'] = about_me_text
+
+        # Remove summary from user_data if it exists
+        if 'summary' in user_data:
+            del user_data['summary']
 
         # Ensure photo_path is a file URI for local access, which is required by WeasyPrint
         if 'photo_path' in user_data and user_data.get('photo_path') and os.path.exists(user_data['photo_path']):

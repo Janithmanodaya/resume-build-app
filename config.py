@@ -11,6 +11,8 @@ SECRET_TOKEN = os.getenv("SECRET_TOKEN")
 if not TELEGRAM_TOKEN or not GEMINI_API_KEY or not SECRET_TOKEN:
     raise ValueError("Required environment variables not found! Please check your .env file for TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, and SECRET_TOKEN.")
 
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+
 # You can add other settings here, like template names
 TEMPLATES = {
     "modern": "resume_bot/templates/modern.html",

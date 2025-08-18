@@ -104,17 +104,15 @@
             <div class="header">
                 <h1 class="name">{{ name | e }}</h1>
                 <div class="contact-info">
-                    <span>{{ email | e }}</span>
-                    <span>{{ phone | e }}</span>
+                    <p><strong>Email:</strong> {{ email | e }}</p>
+                    <p><strong>Phone:</strong> {{ phone | e }}</p>
+                    {% if website %}<p><strong>Web:</strong> {{ website | e }}</p>{% endif %}
+                    {% if address %}<p><strong>Address:</strong> {{ address | e }}</p>{% endif %}
+                    {% if birthday %}<p><strong>Birthday:</strong> {{ birthday | e }}</p>{% endif %}
+                    {% if language %}<p><strong>Language:</strong> {{ language | e }}</p>{% endif %}
+                    {% if nic_number %}<p><strong>NIC:</strong> {{ nic_number | e }}</p>{% endif %}
                 </div>
             </div>
-
-            {% if summary %}
-            <div class="section summary">
-                <h2>Summary</h2>
-                <p>{{ summary | e }}</p>
-            </div>
-            {% endif %}
 
             {% if about_me %}
             <div class="section about-me">
