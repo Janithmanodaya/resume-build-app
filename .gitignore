@@ -1,0 +1,19 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary files
+/tmp/
+*.tmp
+*.swp
+*.swo
+
+# Build artifacts
+/build/
+/dist/
+*.egg-info/
