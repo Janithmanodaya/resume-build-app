@@ -145,6 +145,21 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     # The user might not have a photo, so we need to handle that.
     context.user_data.setdefault('photo_path', None)
 
+    # Show the extracted data to the user
+    extracted_data_message = "Here is the data I extracted from your template:\n\n"
+    for key, value in parsed_data.items():
+        if isinstance(value, list):
+            extracted_data_message += f"**{key.replace('_', ' ').capitalize()}:**\n"
+            for item in value:
+                if isinstance(item, dict):
+                    extracted_data_message += f"- {item.get('name', '')} (Rating: {item.get('rating', 'N/A')})\n"
+                else:
+                    extracted_data_message += f"- {item}\n"
+        else:
+            extracted_data_message += f"**{key.replace('_', ' ').capitalize()}:** {value}\n"
+
+    await update.message.reply_text(extracted_data_message, parse_mode="Markdown")
+
     # Now, start the template selection process
     await update.message.reply_text("Great! Now, let's select a template for your resume.")
     return await send_template_previews(update, context)
@@ -303,7 +318,7 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
     
     # The generator now returns a tuple: (path, template_name)
     selected_template = context.user_data.get('selected_template')
-    pdf_generation_result = generator.generate_pdf(context.user_data, selected_template=selected_template, exclude_template=exclude_template)
+    pdf_generation_result = await generator.generate_pdf(context.user_data, selected_template=selected_template, exclude_template=exclude_template)
 
     if pdf_generation_result:
         pdf_path, template_name = pdf_generation_result
