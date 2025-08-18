@@ -23,6 +23,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+EMOJI_MAP = {
+    "name": "👤",
+    "birthday": "🎂",
+    "email": "📧",
+    "phone": "📞",
+    "website": "🌐",
+    "address": "📍",
+    "language": "🗣️",
+    "nic_number": "🆔",
+    "skills": "🛠️",
+    "experience": "💼",
+    "education": "🎓",
+}
+
 RESUME_TEMPLATE = """
 Please copy the template below, fill in your details, and send it back in a single message.
 
@@ -157,15 +171,18 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     # Show the extracted data to the user
     extracted_data_message = "Here is the data I extracted from your template:\n\n"
     for key, value in parsed_data.items():
-        if isinstance(value, list):
-            extracted_data_message += f"**{key.replace('_', ' ').capitalize()}:**\n"
-            for item in value:
-                if isinstance(item, dict):
-                    extracted_data_message += f"- {item.get('name', '')} (Rating: {item.get('rating', 'N/A')})\n"
-                else:
-                    extracted_data_message += f"- {item}\n"
-        else:
-            extracted_data_message += f"**{key.replace('_', ' ').capitalize()}:** {value}\n"
+        emoji = EMOJI_MAP.get(key, "🔹")
+        if value:
+            if isinstance(value, list):
+                extracted_data_message += f"{emoji} **{key.replace('_', ' ').capitalize()}:**\n"
+                for item in value:
+                    if isinstance(item, dict):
+                        extracted_data_message += f"  - {item.get('name', '')} (Rating: {item.get('rating', 'N/A')})\n"
+                    else:
+                        extracted_data_message += f"  - {item}\n"
+                extracted_data_message += "\n"
+            else:
+                extracted_data_message += f"{emoji} **{key.replace('_', ' ').capitalize()}:** {value}\n\n"
 
     await update.message.reply_text(extracted_data_message, parse_mode="Markdown")
 

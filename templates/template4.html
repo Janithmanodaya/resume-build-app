@@ -20,11 +20,19 @@
             width: 210mm;
             min-height: 297mm;
             box-sizing: border-box;
-            padding: 20mm;
+            padding: 15mm 20mm;
         }
         .header {
             text-align: center;
             margin-bottom: 25px;
+        }
+        .profile-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            display: block;
         }
         .name {
             font-family: 'Playfair Display', serif;
@@ -114,6 +122,9 @@
 <body>
     <div class="container">
         <div class="header">
+            {% if photo_path %}
+            <img src="{{ photo_path }}" alt="Profile Photo" class="profile-img">
+            {% endif %}
             <h1 class="name">{{ name | e }}</h1>
             <h2 class="occupation">{{ occupation | default('Professional') }}</h2>
             <div class="contact-info">
@@ -142,9 +153,7 @@
                     <span class="date">{{ parts[2] | default('', true) | e }}</span>
                 </div>
                 <div class="company">{{ parts[1] | default('', true) | e }}</div>
-                <ul>
-                    <li>{{ parts[3] | default('', true) | e }}</li>
-                </ul>
+                {% if parts[3] %}<div class="description">{{ parts[3] | e }}</div>{% endif %}
             </div>
             {% endfor %}
         </div>

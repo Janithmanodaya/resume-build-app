@@ -29,7 +29,7 @@ def clean_data_recursively(data):
 # Configure the Gemini API client
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash-lite")
+    model = genai.GenerativeModel("gemini-1.5-flash-latest")
 except Exception as e:
     logging.error(f"Failed to configure Gemini: {e}")
     model = None

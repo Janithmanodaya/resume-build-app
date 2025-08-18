@@ -156,9 +156,7 @@
                         <span class="date">{{ parts[2] | default('', true) | e }}</span>
                     </div>
                     <div class="company">{{ parts[1] | default('', true) | e }}</div>
-                    <ul>
-                        <li>{{ parts[3] | default('', true) | e }}</li>
-                    </ul>
+                    {% if parts[3] %}<div class="description">{{ parts[3] | e }}</div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
