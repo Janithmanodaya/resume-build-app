@@ -70,13 +70,15 @@ class States(Enum):
     START = 0
     AWAITING_VERIFICATION_CODE = -1
     AWAITING_TEMPLATE_INPUT = 1
-    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 2
-    AWAITING_REGENERATION = 3
-    AWAITING_REVIEW_CHOICE = 4
-    EDITING_PERSONAL_DETAILS = 5
-    EDITING_EXPERIENCE = 6
-    EDITING_EDUCATION = 7
-    EDITING_SKILLS = 8
+    AWAITING_PHOTO_CHOICE = 2
+    UPLOADING_PHOTO = 3
+    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 4
+    AWAITING_REGENERATION = 5
+    AWAITING_REVIEW_CHOICE = 6
+    EDITING_PERSONAL_DETAILS = 7
+    EDITING_EXPERIENCE = 8
+    EDITING_EDUCATION = 9
+    EDITING_SKILLS = 10
 
 
 # --- START HANDLER ---
@@ -92,7 +94,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Verifies the user's code and starts the resume building process."""
     code = update.message.text.strip()
-    
+
     if firebase_client.verify_and_delete_code(code):
         user_id = update.message.from_user.id
         chat_id = update.message.chat_id
@@ -108,7 +110,7 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
             "Verification successful! Your session has started.\n\n"
             "You have 5 chances to generate a PDF resume."
         )
-        
+
         await update.message.reply_text(
             RESUME_TEMPLATE,
             parse_mode="Markdown"
@@ -132,7 +134,7 @@ import generator
 
 async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
-    Parses the user's template input and starts the template selection process.
+    Parses the user's template input and asks if they want to add a photo.
     """
     user_input = update.message.text
 
@@ -150,9 +152,6 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Store the parsed data in user_data
     context.user_data.update(parsed_data)
-    
-    # The user might not have a photo, so we need to handle that.
-    context.user_data.setdefault('photo_path', None)
 
     # Show the extracted data to the user
     extracted_data_message = "Here is the data I extracted from your template:\n\n"
@@ -169,8 +168,47 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
 
     await update.message.reply_text(extracted_data_message, parse_mode="Markdown")
 
-    # Now, start the template selection process
-    await update.message.reply_text("Great! Now, let's select a template for your resume.")
+    reply_keyboard = [["📷 Upload Photo", "➡️ Skip Photo"]]
+
+    await update.message.reply_text(
+        "Would you like to add a profile photo?",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True, resize_keyboard=True
+        ),
+    )
+    return States.AWAITING_PHOTO_CHOICE
+
+async def handle_photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handles the user's choice to upload or skip the photo."""
+    choice = update.message.text
+
+    if "📷 Upload Photo" in choice:
+        await update.message.reply_text("Okay, please upload your profile photo now.", reply_markup=ReplyKeyboardRemove())
+        return States.UPLOADING_PHOTO
+    else:  # '➡️ Skip Photo'
+        return await skip_photo(update, context)
+
+async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Skips the photo upload and moves to template selection."""
+    context.user_data["photo_path"] = None
+    await update.message.reply_text("No problem. Let's move on to selecting a template.", reply_markup=ReplyKeyboardRemove())
+    return await send_template_previews(update, context)
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the photo and moves to template selection."""
+    photo_file = await update.message.photo[-1].get_file()
+
+    # Create a temporary directory for the user's session
+    user_id = update.message.from_user.id
+    temp_dir = os.path.join(tempfile.gettempdir(), "resume_bot", str(user_id))
+    os.makedirs(temp_dir, exist_ok=True)
+
+    file_path = os.path.join(temp_dir, "profile_photo.jpg")
+    await photo_file.download_to_drive(file_path)
+
+    context.user_data["photo_path"] = file_path
+
+    await update.message.reply_text("Photo received! Now, let's select a template.")
     return await send_template_previews(update, context)
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -537,6 +575,8 @@ async def on_startup(app: web.Application):
         states={
             States.AWAITING_VERIFICATION_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_verification_code)],
             States.AWAITING_TEMPLATE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_input)],
+            States.AWAITING_PHOTO_CHOICE: [MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)],
+            States.UPLOADING_PHOTO: [MessageHandler(filters.PHOTO, handle_photo)],
             States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_selection_by_number)],
             States.AWAITING_REVIEW_CHOICE: [CallbackQueryHandler(handle_review_choice, pattern='^review_|^edit_')],
             States.EDITING_PERSONAL_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_personal_details)],
