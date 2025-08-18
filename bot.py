@@ -107,9 +107,13 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
 
         return States.AWAITING_TEMPLATE_INPUT
     else:
+        keyboard = [[InlineKeyboardButton("Contact Admin", url="https://t.me/+94788620859")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
             "Invalid or expired code.\n\n"
-            "Please try again or contact the admin at [Your Contact Info] to get a new code."
+            "Please try again or contact the admin to get a new code.\n"
+            "Enter that new code",
+            reply_markup=reply_markup
         )
         return States.AWAITING_VERIFICATION_CODE
 
