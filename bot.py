@@ -292,7 +292,7 @@ async def handle_template_selection(update: Update, context: ContextTypes.DEFAUL
     template_name = query.data.split('_')[1]
     context.user_data['selected_template'] = template_name
 
-    await query.edit_message_text(text=f"You have selected the '{template_name}' template.")
+    await query.edit_message_caption(caption=f"You have selected the '{template_name}' template.")
 
     keyboard = [
         [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
