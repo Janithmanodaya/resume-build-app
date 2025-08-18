@@ -78,6 +78,7 @@ import asyncio
 import tempfile
 import firebase_client
 import user_data_store
+import image_utils
 
 # Define conversation states using an Enum for clarity
 class States(Enum):
@@ -87,7 +88,7 @@ class States(Enum):
     AWAITING_PHOTO_CHOICE = 2
     UPLOADING_PHOTO = 3
     AWAITING_ACCENT_COLOR = 4
-    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 5
+    AWAITING_TEMPLATE_SELECTION = 5
     AWAITING_REGENERATION = 6
     AWAITING_REVIEW_CHOICE = 7
     EDITING_PERSONAL_DETAILS = 8
@@ -264,45 +265,44 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     return await send_template_previews(update, context)
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Sends a numbered list of templates to the user."""
+    """Sends the template previews to the user."""
+    await update.message.reply_text("Please choose a template from the following options:")
 
-    template_list = ""
-    for i, template_name in enumerate(config.TEMPLATES.keys(), 1):
-        template_list += f"{i}. {template_name.capitalize()}\n"
+    for template_name in config.TEMPLATES.keys():
+        image_path = f"sample/{template_name}.png"
 
-    await update.message.reply_text(
-        "Please choose a template by sending its number:\n\n" + template_list
-    )
-
-    return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
-
-async def handle_template_selection_by_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handles the user's numeric template selection."""
-    try:
-        choice = int(update.message.text.strip())
-        template_names = list(config.TEMPLATES.keys())
-
-        if 1 <= choice <= len(template_names):
-            template_name = template_names[choice - 1]
-            context.user_data['selected_template'] = template_name
-
-            await update.message.reply_text(f"You have selected the '{template_name}' template.")
-
-            keyboard = [
-                [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
-                [InlineKeyboardButton("No, generate PDF now", callback_data='review_no')]
-            ]
+        if os.path.exists(image_path):
+            keyboard = [[InlineKeyboardButton("Select this template", callback_data=f"template_{template_name}")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await update.message.reply_text("Would you like to review or edit your data before we generate the PDF?", reply_markup=reply_markup)
-
-            return States.AWAITING_REVIEW_CHOICE
+            await update.message.reply_photo(
+                photo=open(image_path, 'rb'),
+                reply_markup=reply_markup
+            )
         else:
-            await update.message.reply_text("Invalid number. Please choose a number from the list.")
-            return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
-    except (ValueError, IndexError):
-        await update.message.reply_text("Invalid input. Please send a number.")
-        return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
+            logger.warning(f"Sample image for template '{template_name}' not found.")
+
+    return States.AWAITING_TEMPLATE_SELECTION
+
+async def handle_template_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handles the user's template selection."""
+    query = update.callback_query
+    await query.answer()
+
+    template_name = query.data.split('_')[1]
+    context.user_data['selected_template'] = template_name
+
+    await query.edit_message_text(text=f"You have selected the '{template_name}' template.")
+
+    keyboard = [
+        [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
+        [InlineKeyboardButton("No, generate PDF now", callback_data='review_no')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.message.reply_text("Would you like to review or edit your data before we generate the PDF?", reply_markup=reply_markup)
+
+    return States.AWAITING_REVIEW_CHOICE
 
 async def handle_review_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's choice to review data or generate the PDF."""
@@ -689,6 +689,40 @@ async def health_check_handler(_: web.Request) -> web.Response:
     return web.Response(text="OK")
 
 
+def prepare_sample_images():
+    """
+    Checks if sample images exist, and if not, creates them by watermarking the original images.
+    """
+    sample_dir = 'sample'
+    image_dir = 'image'
+
+    if not os.path.exists(sample_dir):
+        os.makedirs(sample_dir)
+
+    for template_name in config.TEMPLATES.keys():
+        sample_image_path = f"{sample_dir}/{template_name}.png"
+
+        if not os.path.exists(sample_image_path):
+            original_image_path_jpg = f"{image_dir}/{template_name}.jpg"
+            original_image_path_png = f"{image_dir}/{template_name}.png"
+
+            original_image_path = None
+            if os.path.exists(original_image_path_jpg):
+                original_image_path = original_image_path_jpg
+            elif os.path.exists(original_image_path_png):
+                original_image_path = original_image_path_png
+
+            if original_image_path:
+                logger.info(f"Generating sample image for {template_name}...")
+                image_utils.add_text_to_image(
+                    original_image_path,
+                    template_name.capitalize(),
+                    sample_image_path
+                )
+            else:
+                logger.warning(f"Original image for template '{template_name}' not found in 'image' directory.")
+
+
 async def on_startup(app: web.Application):
     """
     Actions to take on application startup.
@@ -698,6 +732,9 @@ async def on_startup(app: web.Application):
     """
     # Initialize Firebase
     firebase_client.initialize_firebase()
+
+    # Prepare sample images
+    prepare_sample_images()
 
     application = Application.builder().token(config.TELEGRAM_TOKEN).build()
 
@@ -710,7 +747,7 @@ async def on_startup(app: web.Application):
             States.AWAITING_PHOTO_CHOICE: [MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)],
             States.UPLOADING_PHOTO: [MessageHandler(filters.PHOTO, handle_photo)],
             States.AWAITING_ACCENT_COLOR: [MessageHandler(filters.Regex("^(Blue|Green|Red|Purple)$"), select_color)],
-            States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_selection_by_number)],
+            States.AWAITING_TEMPLATE_SELECTION: [CallbackQueryHandler(handle_template_selection, pattern='^template_')],
             States.AWAITING_REVIEW_CHOICE: [CallbackQueryHandler(handle_review_choice, pattern='^review_|^edit_')],
             States.EDITING_PERSONAL_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_personal_details)],
             States.EDITING_EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_experience)],
