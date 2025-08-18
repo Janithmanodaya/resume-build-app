@@ -4,188 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A4;
             margin: 0;
         }
         body {
-            font-family: 'EB Garamond', serif;
-            line-height: 1.7;
-            color: #333;
+            font-family: 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: #444;
             background: #fff;
         }
         .container {
+            display: grid;
+            grid-template-columns: 68% 32%;
             width: 210mm;
             min-height: 297mm;
             box-sizing: border-box;
+        }
+        .main-content {
             padding: 25mm;
+            box-sizing: border-box;
+        }
+        .sidebar {
+            background-color: {{ accent_color | default('#f0f0f0') }};
+            padding: 25mm;
+            box-sizing: border-box;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .name {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 3.5em;
-            font-weight: 700;
-            margin: 0;
-            color: {{ accent_color | default('#333') }};
-        }
-        .occupation {
-            font-family: 'EB Garamond', serif;
-            font-size: 1.3em;
-            color: #555;
-            margin: 5px 0 15px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .contact-info {
-            font-size: 1em;
-            color: #444;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .contact-info span:not(:last-child)::after {
-            content: '•';
-            margin: 0 12px;
-            color: #bbb;
-        }
-        .header-line {
-            width: 80%;
-            margin: 0 auto;
-            height: 1px;
-            background: #ccc;
             margin-bottom: 30px;
         }
-        .section {
-            margin-bottom: 25px;
+        .name {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 3em;
+            margin: 0;
         }
-        .section h2 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.6em;
-            font-weight: 700;
-            color: {{ accent_color | default('#333') }};
+        .occupation {
+            font-size: 1.2em;
+            color: #555;
+            margin: 5px 0 0;
+        }
+        .sidebar h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.4em;
             margin-bottom: 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
         }
-        .about-me p {
-            font-size: 1.1em;
-            text-align: justify;
-            column-count: 2;
-            column-gap: 20px;
+        .contact-info p {
+            margin: 5px 0;
+        }
+        .skills ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .skills li {
+            margin-bottom: 5px;
+        }
+        .main-content h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
         }
         .experience-item, .education-item {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         .item-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
         }
         .experience-item h3, .education-item h3 {
-            font-family: 'EB Garamond', serif;
-            font-weight: 500;
+            font-size: 1.2em;
+            font-weight: 600;
             margin: 0;
-            font-size: 1.25em;
         }
         .experience-item .date, .education-item .date {
             font-style: italic;
             color: #777;
-            font-size: 0.95em;
+            font-size: 0.9em;
         }
         .experience-item .company, .education-item .university {
-            font-weight: 500;
+            font-weight: 600;
             color: #555;
             margin-bottom: 8px;
         }
         .experience-item ul {
             padding-left: 20px;
             margin-top: 5px;
-            font-size: 1.05em;
-        }
-        .skills ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .skills li {
-            font-size: 1em;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1 class="name">{{ name | e }}</h1>
-            <h2 class="occupation">{{ occupation | default('Professional') }}</h2>
-            <div class="contact-info">
-                <span>{{ email | e }}</span>
-                <span>{{ phone | e }}</span>
-                {% if website %}<span>{{ website | e }}</span>{% endif %}
+        <div class="main-content">
+            <div class="header">
+                <h1 class="name">{{ name | e }}</h1>
+                <h2 class="occupation">{{ occupation | default('Professional') }}</h2>
             </div>
-        </div>
-        <div class="header-line"></div>
-
-        {% if about_me %}
-        <div class="section about-me">
-            <h2>About Me</h2>
-            <p>{{ about_me | e }}</p>
-        </div>
-        {% endif %}
-
-        {% if experience %}
-        <div class="section experience">
-            <h2>Experience</h2>
-            {% for exp in experience %}
-            {% set parts = exp.split(',') %}
-            <div class="experience-item">
-                <div class="item-header">
-                    <h3>{{ parts[0] | e }}</h3>
-                    <span class="date">{{ parts[2] | default('', true) | e }}</span>
+            {% if about_me %}
+            <div class="section about-me">
+                <h2>About Me</h2>
+                <p>{{ about_me | e }}</p>
+            </div>
+            {% endif %}
+            {% if experience %}
+            <div class="section experience">
+                <h2>Experience</h2>
+                {% for exp in experience %}
+                {% set parts = exp.split(',') %}
+                <div class="experience-item">
+                    <div class="item-header">
+                        <h3>{{ parts[0] | e }}</h3>
+                        <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                    </div>
+                    <div class="company">{{ parts[1] | default('', true) | e }}</div>
+                    <ul>
+                        <li>{{ parts[3] | default('', true) | e }}</li>
+                    </ul>
                 </div>
-                <div class="company">{{ parts[1] | default('', true) | e }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="sidebar">
+            <div class="contact-info">
+                <h2>Contact</h2>
+                <p><strong>Email:</strong> {{ email | e }}</p>
+                <p><strong>Phone:</strong> {{ phone | e }}</p>
+                {% if website %}<p><strong>Web:</strong> {{ website | e }}</p>{% endif %}
+                {% if address %}<p><strong>Address:</strong> {{ address | e }}</p>{% endif %}
+            </div>
+            {% if education %}
+            <div class="section education">
+                <h2>Education</h2>
+                {% for edu in education %}
+                {% set parts = edu.split(',') %}
+                <div class="education-item">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <div class="university">{{ parts[1] | default('', true) | e }}</div>
+                    <div class="date">{{ parts[2] | default('', true) | e }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if skills %}
+            <div class="section skills">
+                <h2>Skills</h2>
                 <ul>
-                    <li>{{ parts[3] | default('', true) | e }}</li>
+                    {% for skill in skills %}
+                    <li>{{ skill.name | e }}</li>
+                    {% endfor %}
                 </ul>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
-        {% endif %}
-
-        {% if education %}
-        <div class="section education">
-            <h2>Education</h2>
-            {% for edu in education %}
-            {% set parts = edu.split(',') %}
-            <div class="education-item">
-                <div class="item-header">
-                    <h3>{{ parts[0] | e }}</h3>
-                    <span class="date">{{ parts[2] | default('', true) | e }}</span>
-                </div>
-                <div class="university">{{ parts[1] | default('', true) | e }}</div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        {% if skills %}
-        <div class="section skills">
-            <h2>Skills</h2>
-            <ul>
-                {% for skill in skills %}
-                <li>{{ skill.name | e }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
     </div>
 </body>
 </html>

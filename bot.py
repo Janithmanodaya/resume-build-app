@@ -248,7 +248,7 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Sends a numbered list of templates to the user."""
-    
+
     template_list = ""
     for i, template_name in enumerate(config.TEMPLATES.keys(), 1):
         template_list += f"{i}. {template_name.capitalize()}\n"
@@ -326,27 +326,95 @@ async def show_review_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return States.AWAITING_REVIEW_CHOICE
 
 async def edit_personal_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Prompts the user to edit their personal details."""
-    await update.callback_query.message.reply_text("Please send your updated personal details in the same format as the template.")
+    """Shows current personal details and prompts for edits."""
+    query = update.callback_query
+    await query.answer()
+
+    personal_details = {
+        "Name": context.user_data.get("name"),
+        "Birthday": context.user_data.get("birthday"),
+        "Email": context.user_data.get("email"),
+        "Phone": context.user_data.get("phone"),
+        "Web site": context.user_data.get("website"),
+        "Address": context.user_data.get("address"),
+        "Language": context.user_data.get("language"),
+        "NIC Number": context.user_data.get("nic_number"),
+    }
+
+    message = "Here are your current personal details:\n\n"
+    for key, value in personal_details.items():
+        message += f"**{key}:** {value or 'Not set'}\n"
+
+    message += "\nPlease send the updated details in the same format, or send 'yes' to skip."
+
+    reply_markup = ReplyKeyboardMarkup([["Skip"]], one_time_keyboard=True, resize_keyboard=True)
+
+    await query.message.reply_text(message, parse_mode="Markdown", reply_markup=reply_markup)
     return States.EDITING_PERSONAL_DETAILS
 
 async def edit_experience(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Prompts the user to edit their experience."""
-    await update.callback_query.message.reply_text("Please send your updated experience in the same format as the template.")
+    """Shows current experience and prompts for edits."""
+    query = update.callback_query
+    await query.answer()
+
+    experience = context.user_data.get("experience", [])
+    message = "Here is your current experience:\n\n"
+    if experience:
+        message += "\n".join(f"- {exp}" for exp in experience)
+    else:
+        message += "Not set."
+
+    message += "\nPlease send the updated experience, with each entry on a new line. Or, send 'yes' to skip."
+
+    reply_markup = ReplyKeyboardMarkup([["Skip"]], one_time_keyboard=True, resize_keyboard=True)
+
+    await query.message.reply_text(message, parse_mode="Markdown", reply_markup=reply_markup)
     return States.EDITING_EXPERIENCE
 
 async def edit_education(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Prompts the user to edit their education."""
-    await update.callback_query.message.reply_text("Please send your updated education in the same format as the template.")
+    """Shows current education and prompts for edits."""
+    query = update.callback_query
+    await query.answer()
+
+    education = context.user_data.get("education", [])
+    message = "Here is your current education:\n\n"
+    if education:
+        message += "\n".join(f"- {edu}" for edu in education)
+    else:
+        message += "Not set."
+
+    message += "\nPlease send the updated education, with each entry on a new line. Or, send 'yes' to skip."
+
+    reply_markup = ReplyKeyboardMarkup([["Skip"]], one_time_keyboard=True, resize_keyboard=True)
+
+    await query.message.reply_text(message, parse_mode="Markdown", reply_markup=reply_markup)
     return States.EDITING_EDUCATION
 
 async def edit_skills(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Prompts the user to edit their skills."""
-    await update.callback_query.message.reply_text("Please send your updated skills in the same format as the template.")
+    """Shows current skills and prompts for edits."""
+    query = update.callback_query
+    await query.answer()
+
+    skills = context.user_data.get("skills", [])
+    message = "Here are your current skills:\n\n"
+    if skills:
+        message += "\n".join(f"- {s['name']} (Rating: {s['rating']})" for s in skills)
+    else:
+        message += "Not set."
+
+    message += "\nPlease send the updated skills, with each skill on a new line (e.g., Python, 5). Or, send 'yes' to skip."
+
+    reply_markup = ReplyKeyboardMarkup([["Skip"]], one_time_keyboard=True, resize_keyboard=True)
+
+    await query.message.reply_text(message, parse_mode="Markdown", reply_markup=reply_markup)
     return States.EDITING_SKILLS
 
 async def handle_edited_personal_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited personal details."""
+    if update.message.text.lower() in ['yes', 'skip']:
+        await update.message.reply_text("No changes made to personal details.", reply_markup=ReplyKeyboardRemove())
+        return await show_review_menu(update, context)
+
     # This is a simplified parser. A more robust solution would be to use the AI again.
     # For now, we'll just assume the user provides the data in a key: value format.
     for line in update.message.text.split('\n'):
@@ -355,30 +423,42 @@ async def handle_edited_personal_details(update: Update, context: ContextTypes.D
             key = key.strip().lower().replace(' ', '_')
             context.user_data[key] = value.strip()
 
-    await update.message.reply_text("Personal details updated.")
+    await update.message.reply_text("Personal details updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_experience(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited experience."""
+    if update.message.text.lower() in ['yes', 'skip']:
+        await update.message.reply_text("No changes made to experience.", reply_markup=ReplyKeyboardRemove())
+        return await show_review_menu(update, context)
+
     context.user_data['experience'] = [exp.strip() for exp in update.message.text.split('\n')]
-    await update.message.reply_text("Experience updated.")
+    await update.message.reply_text("Experience updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_education(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited education."""
+    if update.message.text.lower() in ['yes', 'skip']:
+        await update.message.reply_text("No changes made to education.", reply_markup=ReplyKeyboardRemove())
+        return await show_review_menu(update, context)
+
     context.user_data['education'] = [edu.strip() for edu in update.message.text.split('\n')]
-    await update.message.reply_text("Education updated.")
+    await update.message.reply_text("Education updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_skills(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited skills."""
+    if update.message.text.lower() in ['yes', 'skip']:
+        await update.message.reply_text("No changes made to skills.", reply_markup=ReplyKeyboardRemove())
+        return await show_review_menu(update, context)
+
     skills = []
     for line in update.message.text.split('\n'):
         if ',' in line:
             name, rating = line.split(',', 1)
             skills.append({'name': name.strip(), 'rating': int(rating.strip())})
     context.user_data['skills'] = skills
-    await update.message.reply_text("Skills updated.")
+    await update.message.reply_text("Skills updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 
