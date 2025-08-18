@@ -42,8 +42,17 @@ Experience 1:
 Experience 2:
 [Your Job Title], [Company], [Start Date - End Date], [Description]
 
+To add more experience entries, just add a new line like:
+Experience 3: [Job Title], [Company], [Dates], [Description]
+
 Education 1:
 [Your Degree], [University], [Graduation Year]
+
+Education 2:
+[O/L or A/L], [School], [Year]
+
+To add more education entries, just add a new line like:
+Education 3: [Degree], [University], [Year]
 
 Skills:
 [Skill 1], [Rating 1-5]
@@ -363,9 +372,8 @@ async def handle_regeneration_choice(update: Update, context: ContextTypes.DEFAU
 
     if "🎨 Regenerate with New Design" in choice:
         if context.user_data.get('generation_attempts', 0) > 0:
-            await update.message.reply_text("On it! Generating a new design...", reply_markup=ReplyKeyboardRemove())
-            # Call the generator again, excluding the last template used
-            return await generate_and_send_pdf(update, context, exclude_template=context.user_data.get('last_template'))
+            await update.message.reply_text("Let's pick a new design.", reply_markup=ReplyKeyboardRemove())
+            return await send_template_previews(update, context)
         else:
             await update.message.reply_text(
                 "You have no more PDF generation attempts left. Please /start a new session to continue.",
