@@ -72,13 +72,14 @@ class States(Enum):
     AWAITING_TEMPLATE_INPUT = 1
     AWAITING_PHOTO_CHOICE = 2
     UPLOADING_PHOTO = 3
-    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 4
-    AWAITING_REGENERATION = 5
-    AWAITING_REVIEW_CHOICE = 6
-    EDITING_PERSONAL_DETAILS = 7
-    EDITING_EXPERIENCE = 8
-    EDITING_EDUCATION = 9
-    EDITING_SKILLS = 10
+    AWAITING_ACCENT_COLOR = 4
+    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 5
+    AWAITING_REGENERATION = 6
+    AWAITING_REVIEW_CHOICE = 7
+    EDITING_PERSONAL_DETAILS = 8
+    EDITING_EXPERIENCE = 9
+    EDITING_EDUCATION = 10
+    EDITING_SKILLS = 11
 
 
 # --- START HANDLER ---
@@ -189,13 +190,13 @@ async def handle_photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
         return await skip_photo(update, context)
 
 async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Skips the photo upload and moves to template selection."""
+    """Skips the photo upload and moves to accent color selection."""
     context.user_data["photo_path"] = None
-    await update.message.reply_text("No problem. Let's move on to selecting a template.", reply_markup=ReplyKeyboardRemove())
-    return await send_template_previews(update, context)
+    await update.message.reply_text("No problem. Let's move on to selecting an accent color.", reply_markup=ReplyKeyboardRemove())
+    return await prompt_for_accent_color(update, context)
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the photo and moves to template selection."""
+    """Stores the photo and moves to accent color selection."""
     photo_file = await update.message.photo[-1].get_file()
 
     # Create a temporary directory for the user's session
@@ -208,7 +209,41 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     context.user_data["photo_path"] = file_path
 
-    await update.message.reply_text("Photo received! Now, let's select a template.")
+    await update.message.reply_text("Photo received! Now, let's pick an accent color.")
+    return await prompt_for_accent_color(update, context)
+
+async def prompt_for_accent_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Asks the user to pick an accent color."""
+    reply_keyboard = [["Blue", "Green"], ["Red", "Purple"]]
+
+    await update.message.reply_text(
+        "Please pick an accent color for your resume:",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, one_time_keyboard=True, resize_keyboard=True
+        ),
+    )
+    return States.AWAITING_ACCENT_COLOR
+
+async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the selected color and moves to template selection."""
+    color_map = {
+        "Blue": "#3498db",
+        "Green": "#2ecc71",
+        "Red": "#e74c3c",
+        "Purple": "#8e44ad",
+    }
+
+    color_choice = update.message.text.strip().capitalize()
+    if color_choice not in color_map:
+        await update.message.reply_text(
+            "Invalid choice. Please select from Blue, Green, Red, or Purple."
+        )
+        return States.AWAITING_ACCENT_COLOR
+
+    context.user_data["accent_color"] = color_map[color_choice]
+
+    await update.message.reply_text(f"Great! You've chosen {color_choice}. Now, let's select a template.", reply_markup=ReplyKeyboardRemove())
+
     return await send_template_previews(update, context)
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -577,6 +612,7 @@ async def on_startup(app: web.Application):
             States.AWAITING_TEMPLATE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_input)],
             States.AWAITING_PHOTO_CHOICE: [MessageHandler(filters.Regex("^(📷 Upload Photo|➡️ Skip Photo)$"), handle_photo_choice)],
             States.UPLOADING_PHOTO: [MessageHandler(filters.PHOTO, handle_photo)],
+            States.AWAITING_ACCENT_COLOR: [MessageHandler(filters.Regex("^(Blue|Green|Red|Purple)$"), select_color)],
             States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_selection_by_number)],
             States.AWAITING_REVIEW_CHOICE: [CallbackQueryHandler(handle_review_choice, pattern='^review_|^edit_')],
             States.EDITING_PERSONAL_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_personal_details)],

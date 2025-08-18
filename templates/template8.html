@@ -4,85 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
         @page {
             size: A4;
             margin: 0;
         }
         body {
-            font-family: 'Times New Roman', Times, serif;
-            line-height: 1.5;
-            color: #000;
+            font-family: 'Merriweather', serif;
+            line-height: 1.6;
+            color: #333;
             background: #fff;
         }
         .container {
             width: 210mm;
             min-height: 297mm;
             box-sizing: border-box;
-            padding: 25mm;
-            border: 1px solid #000;
-        }
-        .inner-container {
-            border: 3px double #000;
-            padding: 20px;
-            height: calc(100% - 40px);
+            padding: 20mm;
         }
         .header {
             text-align: center;
             margin-bottom: 20px;
+            border-bottom: 2px solid {{ accent_color | default('#333') }};
+            padding-bottom: 20px;
         }
         .name {
-            font-size: 2.8em;
-            font-weight: bold;
+            font-size: 3em;
+            font-weight: 700;
             margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+        }
+        .occupation {
+            font-size: 1.2em;
+            color: #555;
+            margin: 5px 0 10px;
         }
         .contact-info {
-            margin-top: 10px;
-            font-size: 1.1em;
+            font-size: 0.95em;
+            color: #444;
         }
         .contact-info span:not(:last-child)::after {
             content: '•';
             margin: 0 10px;
         }
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         .section h2 {
             font-size: 1.4em;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: 700;
             margin-bottom: 15px;
-            color: {{ accent_color | default('#000080') }};
-        }
-        .summary p {
-            text-align: justify;
+            color: {{ accent_color | default('#333') }};
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
         }
         .experience-item, .education-item {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         .item-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
+            margin-bottom: 2px;
         }
         .experience-item h3, .education-item h3 {
             margin: 0;
-            font-size: 1.2em;
-            font-weight: bold;
+            font-size: 1.15em;
+            font-weight: 700;
         }
         .experience-item .date, .education-item .date {
-            font-size: 1em;
-            font-weight: bold;
+            font-style: italic;
+            color: #777;
+            font-size: 0.9em;
         }
         .experience-item .company, .education-item .university {
-            font-style: italic;
-            font-size: 1.1em;
-            margin-bottom: 5px;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 8px;
         }
         .experience-item ul {
             padding-left: 20px;
@@ -92,6 +90,7 @@
             list-style-type: none;
             padding: 0;
             columns: 2;
+            gap: 20px;
         }
         .skills li {
             margin-bottom: 5px;
@@ -100,73 +99,69 @@
 </head>
 <body>
     <div class="container">
-        <div class="inner-container">
-            <div class="header">
-                <h1 class="name">{{ name | e }}</h1>
-                <div class="contact-info">
-                    <p><strong>Email:</strong> {{ email | e }}</p>
-                    <p><strong>Phone:</strong> {{ phone | e }}</p>
-                    {% if website %}<p><strong>Web:</strong> {{ website | e }}</p>{% endif %}
-                    {% if address %}<p><strong>Address:</strong> {{ address | e }}</p>{% endif %}
-                    {% if birthday %}<p><strong>Birthday:</strong> {{ birthday | e }}</p>{% endif %}
-                    {% if language %}<p><strong>Language:</strong> {{ language | e }}</p>{% endif %}
-                    {% if nic_number %}<p><strong>NIC:</strong> {{ nic_number | e }}</p>{% endif %}
+        <div class="header">
+            <h1 class="name">{{ name | e }}</h1>
+            <h2 class="occupation">{{ occupation | default('Professional') }}</h2>
+            <div class="contact-info">
+                <span>{{ email | e }}</span>
+                <span>{{ phone | e }}</span>
+                {% if website %}<span>{{ website | e }}</span>{% endif %}
+                {% if address %}<span>{{ address | e }}</span>{% endif %}
+            </div>
+        </div>
+
+        {% if about_me %}
+        <div class="section about-me">
+            <h2>About Me</h2>
+            <p>{{ about_me | e }}</p>
+        </div>
+        {% endif %}
+
+        {% if experience %}
+        <div class="section experience">
+            <h2>Experience</h2>
+            {% for exp in experience %}
+            {% set parts = exp.split(',') %}
+            <div class="experience-item">
+                <div class="item-header">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <span class="date">{{ parts[2] | default('', true) | e }}</span>
                 </div>
-            </div>
-
-            {% if about_me %}
-            <div class="section about-me">
-                <h2>About Me</h2>
-                <p>{{ about_me | e }}</p>
-            </div>
-            {% endif %}
-
-            {% if experience %}
-            <div class="section experience">
-                <h2>Experience</h2>
-                {% for exp in experience %}
-                {% set parts = exp.split(',') %}
-                <div class="experience-item">
-                    <div class="item-header">
-                        <h3>{{ parts[0] | e }}</h3>
-                        <span class="date">{{ parts[2] | default('', true) | e }}</span>
-                    </div>
-                    <div class="company">{{ parts[1] | default('', true) | e }}</div>
-                    <ul>
-                        <li>{{ parts[3] | default('', true) | e }}</li>
-                    </ul>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            {% if education %}
-            <div class="section education">
-                <h2>Education</h2>
-                {% for edu in education %}
-                {% set parts = edu.split(',') %}
-                <div class="education-item">
-                    <div class="item-header">
-                        <h3>{{ parts[0] | e }}</h3>
-                        <span class="date">{{ parts[2] | default('', true) | e }}</span>
-                    </div>
-                    <div class="university">{{ parts[1] | default('', true) | e }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            {% if skills %}
-            <div class="section skills">
-                <h2>Skills</h2>
+                <div class="company">{{ parts[1] | default('', true) | e }}</div>
                 <ul>
-                    {% for skill in skills %}
-                    <li>{{ skill.name | e }}</li>
-                    {% endfor %}
+                    <li>{{ parts[3] | default('', true) | e }}</li>
                 </ul>
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% endif %}
+
+        {% if education %}
+        <div class="section education">
+            <h2>Education</h2>
+            {% for edu in education %}
+            {% set parts = edu.split(',') %}
+            <div class="education-item">
+                <div class="item-header">
+                    <h3>{{ parts[0] | e }}</h3>
+                    <span class="date">{{ parts[2] | default('', true) | e }}</span>
+                </div>
+                <div class="university">{{ parts[1] | default('', true) | e }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if skills %}
+        <div class="section skills">
+            <h2>Skills</h2>
+            <ul>
+                {% for skill in skills %}
+                <li>{{ skill.name | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>
