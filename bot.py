@@ -61,7 +61,7 @@ class States(Enum):
     START = 0
     AWAITING_VERIFICATION_CODE = -1
     AWAITING_TEMPLATE_INPUT = 1
-    AWAITING_TEMPLATE_SELECTION = 2
+    AWAITING_TEMPLATE_SELECTION_BY_NUMBER = 2
     AWAITING_REGENERATION = 3
     AWAITING_REVIEW_CHOICE = 4
     EDITING_PERSONAL_DETAILS = 5
@@ -146,52 +146,45 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     return await send_template_previews(update, context)
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Sends the template previews to the user."""
-    await update.message.reply_text("Please choose a template from the following options:")
+    """Sends a numbered list of templates to the user."""
+    
+    template_list = ""
+    for i, template_name in enumerate(config.TEMPLATES.keys(), 1):
+        template_list += f"{i}. {template_name.capitalize()}\n"
 
-    for template_name in config.TEMPLATES.keys():
-        image_path_jpg = f"image/{template_name}.jpg"
-        image_path_png = f"image/{template_name}.png"
-        
-        image_path = None
-        if os.path.exists(image_path_jpg):
-            image_path = image_path_jpg
-        elif os.path.exists(image_path_png):
-            image_path = image_path_png
+    await update.message.reply_text(
+        "Please choose a template by sending its number:\n\n" + template_list
+    )
 
-        if image_path:
-            keyboard = [[InlineKeyboardButton("Select this template", callback_data=f"template_{template_name}")]]
+    return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
+
+async def handle_template_selection_by_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handles the user's numeric template selection."""
+    try:
+        choice = int(update.message.text.strip())
+        template_names = list(config.TEMPLATES.keys())
+
+        if 1 <= choice <= len(template_names):
+            template_name = template_names[choice - 1]
+            context.user_data['selected_template'] = template_name
+
+            await update.message.reply_text(f"You have selected the '{template_name}' template.")
+
+            keyboard = [
+                [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
+                [InlineKeyboardButton("No, generate PDF now", callback_data='review_no')]
+            ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await update.message.reply_photo(
-                photo=open(image_path, 'rb'),
-                caption=template_name.capitalize(),
-                reply_markup=reply_markup
-            )
+            await update.message.reply_text("Would you like to review or edit your data before we generate the PDF?", reply_markup=reply_markup)
+
+            return States.AWAITING_REVIEW_CHOICE
         else:
-            logger.warning(f"Image for template '{template_name}' not found.")
-
-    return States.AWAITING_TEMPLATE_SELECTION
-
-async def handle_template_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handles the user's template selection and asks about review."""
-    query = update.callback_query
-    await query.answer()
-    
-    template_name = query.data.split('_')[1]
-    context.user_data['selected_template'] = template_name
-
-    await query.edit_message_text(text=f"You have selected the '{template_name}' template.")
-
-    keyboard = [
-        [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
-        [InlineKeyboardButton("No, generate PDF now", callback_data='review_no')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.message.reply_text("Would you like to review or edit your data before we generate the PDF?", reply_markup=reply_markup)
-
-    return States.AWAITING_REVIEW_CHOICE
+            await update.message.reply_text("Invalid number. Please choose a number from the list.")
+            return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
+    except (ValueError, IndexError):
+        await update.message.reply_text("Invalid input. Please send a number.")
+        return States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER
 
 async def handle_review_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's choice to review data or generate the PDF."""
@@ -517,7 +510,7 @@ async def on_startup(app: web.Application):
         states={
             States.AWAITING_VERIFICATION_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_verification_code)],
             States.AWAITING_TEMPLATE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_input)],
-            States.AWAITING_TEMPLATE_SELECTION: [CallbackQueryHandler(handle_template_selection, pattern='^template_')],
+            States.AWAITING_TEMPLATE_SELECTION_BY_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_template_selection_by_number)],
             States.AWAITING_REVIEW_CHOICE: [CallbackQueryHandler(handle_review_choice, pattern='^review_|^edit_')],
             States.EDITING_PERSONAL_DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_personal_details)],
             States.EDITING_EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edited_experience)],
