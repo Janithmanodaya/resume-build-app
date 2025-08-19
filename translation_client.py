@@ -31,24 +31,13 @@ async def translate_text(text: str, target_language: str, client) -> str | None:
         return text # Return original text if client is not available or text is empty
 
     try:
-        # Detect the source language dynamically for better accuracy.
-        # This prevents issues if the user inputs text that is not purely English.
-        source_language = await detect_language(text, client)
-        if not source_language:
-            source_language = 'en' # Fallback to English
-
-        result = client.translate(text, target_language=target_language, source_language=source_language)
-        translated_text = result.get('translatedText')
-
-        if translated_text:
-            logging.info(f"Successfully translated '{text}' to '{translated_text}' ({target_language})")
-            return translated_text
-        else:
-            logging.warning(f"Google Translate API returned empty result for text: '{text}' and language: '{target_language}'")
-            return None
-
+        # The free tier of Google Translate API (v2) requires 'source_language'
+        # We can detect it, but it's more reliable to specify it if known.
+        # For this bot, we assume the source is always English.
+        result = client.translate(text, target_language=target_language, source_language='en')
+        return result['translatedText']
     except Exception as e:
-        logging.error(f"Google Translate API call failed for text '{text}' and target language '{target_language}': {e}")
+        logging.error(f"Google Translate API call failed for target language '{target_language}': {e}")
         return None
 
 async def detect_language(text: str, client) -> str | None:
@@ -67,12 +56,7 @@ async def detect_language(text: str, client) -> str | None:
 
     try:
         result = client.detect_language(text)
-        detected_lang = result.get('language')
-        if detected_lang:
-            return detected_lang
-        else:
-            logging.warning(f"Google Translate language detection returned empty result for text: '{text}'")
-            return None
+        return result['language']
     except Exception as e:
-        logging.error(f"Google Translate language detection failed for text '{text}': {e}")
+        logging.error(f"Google Translate language detection failed: {e}")
         return None

@@ -138,25 +138,34 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(final_text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 
+async def get_sinhala_translation(text: str) -> str:
+    """
+    Translates text specifically to Sinhala, with a fallback to the original text.
+    """
+    translated_text = await translation_client.translate_text(text, 'si', google_translate_client)
+    if not translated_text:
+        return text  # Fallback to original English text if translation fails
+    return translated_text
+
+
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
     """
-    A centralized helper to translate and humanize text, handling all special cases.
+    Acts as a router to translate and humanize text based on the target language.
     """
     if target_language == 'en' or not text:
         return text
 
-    # 1. Translate
+    if target_language == 'si':
+        return await get_sinhala_translation(text)
+
+    # For all other languages, use the full translation and humanization pipeline
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
     if not translated_text:
-        return text # Fallback to original text
-
-    # 2. Humanize (with exceptions)
-    if target_language == 'si':
-        return translated_text # Bypass Gemini for Sinhala
+        return text  # Fallback to original text
 
     humanized_text = await gemini_client.humanize_text(translated_text, target_language)
     if not humanized_text:
-        return translated_text # Fallback to direct translation
+        return translated_text  # Fallback to direct translation
 
     return humanized_text
 
