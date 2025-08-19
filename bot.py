@@ -18,6 +18,7 @@ from aiohttp import web
 import json
 import translation_client
 import gemini_client
+import cache_manager
 
 # Initialize the Google Translate client
 google_translate_client = translation_client.get_google_translate_client()
@@ -141,22 +142,35 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
     """
     Acts as a router to translate and humanize text based on the target language.
+    It uses a cache to avoid re-translating the same text.
     """
     if target_language == 'en' or not text:
         return text
 
-    # For all other languages, use the full translation and humanization pipeline
+    # Check cache first
+    cache_key = (text, target_language)
+    cached_translation = cache_manager.get_from_cache(cache_key)
+    if cached_translation:
+        logger.info(f"Cache hit for key: {cache_key}")
+        return cached_translation
+
+    logger.info(f"Cache miss for key: {cache_key}. Calling translation APIs.")
+    # If not in cache, proceed with translation
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
     if translated_text is False:
-        # Find the language name from the code for the error message
         language_name = next((name for name, code in config.LANGUAGES.items() if code == target_language), target_language)
         return f"Error: Could not translate to {language_name}. Please contact an administrator."
 
     humanized_text = await gemini_client.humanize_text(translated_text, target_language)
     if not humanized_text:
-        return translated_text  # Fallback to direct translation
+        final_text = translated_text  # Fallback to direct translation
+    else:
+        final_text = humanized_text
 
-    return humanized_text
+    # Add the new translation to the cache
+    cache_manager.add_to_cache(cache_key, final_text)
+
+    return final_text
 
 
 async def handle_language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -910,6 +924,9 @@ async def on_startup(app: web.Application):
     """
     # Initialize Firebase
     firebase_client.initialize_firebase()
+
+    # Load translation cache
+    cache_manager.load_cache()
 
     # Prepare sample images
     prepare_sample_images()

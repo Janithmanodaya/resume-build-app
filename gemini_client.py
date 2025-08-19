@@ -27,19 +27,24 @@ def clean_data_recursively(data):
         return data
 
 # Configure the Gemini API client
+models = {}
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash-lite")
+    models = {
+        "default": genai.GenerativeModel("gemini-1.5-flash-lite"),
+        "si": genai.GenerativeModel("gemini-1.5-pro-latest"),
+    }
+    logging.info("Gemini models initialized successfully.")
 except Exception as e:
     logging.error(f"Failed to configure Gemini: {e}")
-    model = None
 
 async def generate_about_me(user_data: dict) -> str | None:
     """
     Generates a short 'About Me' section based on the user's resume data.
     """
+    model = models.get("default")
     if not model:
-        logging.warning("Gemini model not available. Skipping 'About Me' generation.")
+        logging.warning("Default Gemini model not available. Skipping 'About Me' generation.")
         return None
 
     # Construct a string representation of the user's current resume
@@ -69,8 +74,9 @@ async def parse_resume_from_template(text: str) -> dict | None:
     """
     Parses a single block of text based on a template to extract structured resume data using Gemini.
     """
+    model = models.get("default")
     if not model:
-        logging.warning("Gemini model not available. Skipping parsing.")
+        logging.warning("Default Gemini model not available. Skipping parsing.")
         return None
 
     prompt = (
@@ -114,8 +120,13 @@ async def parse_resume_from_template(text: str) -> dict | None:
 async def humanize_text(text: str, target_language: str) -> str | None:
     """
     Rephrases the given text to be more natural and human-like using the Gemini API.
+    It selects a model based on the target language.
     """
+    # Select the appropriate model based on the language
+    model = models.get(target_language, models.get("default"))
+
     if not model or not text:
+        logging.warning(f"Gemini model not available for language '{target_language}'. Returning original text.")
         return text
 
     prompt = (
@@ -126,8 +137,9 @@ async def humanize_text(text: str, target_language: str) -> str | None:
     )
 
     try:
+        logging.info(f"Using Gemini model '{model.model_name}' for language '{target_language}'.")
         response = await model.generate_content_async(prompt)
         return response.text.strip()
     except Exception as e:
-        logging.error(f"Gemini API call failed for text humanization: {e}")
+        logging.error(f"Gemini API call failed for text humanization with model {model.model_name}: {e}")
         return text # Return the original text on failure
