@@ -142,10 +142,12 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
     if not translated_text:
         translated_text = text # Fallback to original text
 
-    # 2. Humanize the text
-    humanized_text = await gemini_client.humanize_text(translated_text, target_language)
-    if not humanized_text:
-        humanized_text = translated_text # Fallback to translated text
+    # 2. Humanize the text (unless the language is Sinhala)
+    humanized_text = translated_text # Default to the direct translation
+    if target_language != 'si':
+        humanized_text_from_gemini = await gemini_client.humanize_text(translated_text, target_language)
+        if humanized_text_from_gemini:
+            humanized_text = humanized_text_from_gemini # Use humanized text if successful
 
     # 3. Send the message
     if update.callback_query:
@@ -160,6 +162,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
 
     language_code = query.data.split('_')[1]
     context.user_data['language'] = language_code
+    context.user_data['verification_attempts'] = 3
 
     await query.edit_message_text(text=f"Language set to {list(config.LANGUAGES.keys())[list(config.LANGUAGES.values()).index(language_code)]}.")
 
@@ -208,17 +211,27 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
 
         return States.AWAITING_TEMPLATE_INPUT
     else:
-        keyboard = [[InlineKeyboardButton("Contact Admin", url="https://t.me/+94788620859")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await send_translated_message(
-            update,
-            context,
-            "Invalid or expired code.\n\n"
-            "Please try again or contact the admin to get a new code.\n"
-            "Enter that new code",
-            reply_markup=reply_markup
-        )
-        return States.AWAITING_VERIFICATION_CODE
+        context.user_data['verification_attempts'] -= 1
+        attempts_left = context.user_data['verification_attempts']
+
+        if attempts_left > 0:
+            keyboard = [[InlineKeyboardButton("Contact Admin", url="https://t.me/+94788620859")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await send_translated_message(
+                update,
+                context,
+                f"Invalid or expired code. You have {attempts_left} attempts remaining.\n\n"
+                "Please try again or contact the admin to get a new code.",
+                reply_markup=reply_markup
+            )
+            return States.AWAITING_VERIFICATION_CODE
+        else:
+            await send_translated_message(
+                update,
+                context,
+                "You have used all your verification attempts. For security reasons, this session has been terminated. Please /start again later."
+            )
+            return await finish_conversation(update, context)
 
 
 import gemini_client
