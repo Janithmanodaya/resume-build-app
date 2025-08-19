@@ -131,3 +131,27 @@ async def humanize_text(text: str, target_language: str) -> str | None:
     except Exception as e:
         logging.error(f"Gemini API call failed for text humanization: {e}")
         return text # Return the original text on failure
+
+
+async def translate_text_with_gemini(text: str, target_language: str) -> str | None:
+    """
+    Translates text to the target language using the Gemini API.
+    """
+    if not model or not text:
+        return None
+
+    prompt = (
+        f"You are a language translator. Translate the following English text to '{target_language}'. "
+        "Your response must only contain the translated text, with no extra formatting, labels, or explanations.\n\n"
+        f"**English Text:**\n{text}\n\n"
+        f"**Translated Text in {target_language}:**"
+    )
+
+    try:
+        # Using a more advanced model for better translation quality if available
+        translation_model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        response = await translation_model.generate_content_async(prompt)
+        return response.text.strip()
+    except Exception as e:
+        logging.error(f"Gemini API call failed for translation to '{target_language}': {e}")
+        return None

@@ -180,10 +180,10 @@ async def get_translated_humanized_text(text: str, target_language: str) -> str:
 
     # 3. If not in cache, proceed with translation, with robust error handling
     try:
-        # First, get the base translation from Google
-        translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
-        if translated_text is False or not translated_text:
-            logger.error(f"Google Translate failed for target '{target_language}'. Falling back to original text.")
+        # First, get the base translation from Gemini
+        translated_text = await gemini_client.translate_text_with_gemini(text, target_language)
+        if not translated_text:
+            logger.error(f"Gemini translation failed for target '{target_language}'. Falling back to original text.")
             return text # Fallback to original English text on failure
 
         # Then, try to humanize it with Gemini
