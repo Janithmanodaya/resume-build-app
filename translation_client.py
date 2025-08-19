@@ -2,6 +2,10 @@ import logging
 from google.cloud import translate_v2 as translate
 import os
 
+# Make sure to set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+# In a local environment, you can do this by running:
+# export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
+
 def get_google_translate_client():
     """Initializes and returns a Google Translate client."""
     try:
@@ -27,8 +31,13 @@ async def translate_text(text: str, target_language: str, client) -> str | None:
         return text # Return original text if client is not available or text is empty
 
     try:
-        # Assuming the source is always English for this bot
-        result = client.translate(text, target_language=target_language, source_language='en')
+        # Detect the source language dynamically for better accuracy.
+        # This prevents issues if the user inputs text that is not purely English.
+        source_language = await detect_language(text, client)
+        if not source_language:
+            source_language = 'en' # Fallback to English
+
+        result = client.translate(text, target_language=target_language, source_language=source_language)
         translated_text = result.get('translatedText')
 
         if translated_text:
