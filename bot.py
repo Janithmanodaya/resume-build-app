@@ -139,15 +139,37 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(final_text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 
+# A set of strings that should not be translated, like button labels.
+NON_TRANSLATABLE_STRINGS = {
+    "📷 Upload Photo",
+    "➡️ Skip Photo",
+    "Blue", "Green", "Red", "Purple",
+    "Select this template",
+    "Yes, review my data",
+    "No, generate PDF now",
+    "Edit Personal Details",
+    "Edit Experience",
+    "Edit Education",
+    "Edit Skills",
+    "Looks Good, Generate PDF",
+    "🎨 Regenerate with New Design",
+    "✅ Finish",
+    "Skip",
+    "Contact Admin",
+}
+
+
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
     """
     Acts as a router to translate and humanize text based on the target language.
     It uses a cache to avoid re-translating the same text.
+    It also skips translation for certain predefined strings (e.g., button labels).
     """
-    if target_language == 'en' or not text:
+    # 1. Skip translation for non-translatable strings or if the target language is English
+    if target_language == 'en' or not text or text in NON_TRANSLATABLE_STRINGS:
         return text
 
-    # Check cache first
+    # 2. Check cache
     cache_key = (text, target_language)
     cached_translation = cache_manager.get_from_cache(cache_key)
     if cached_translation:
@@ -155,22 +177,32 @@ async def get_translated_humanized_text(text: str, target_language: str) -> str:
         return cached_translation
 
     logger.info(f"Cache miss for key: {cache_key}. Calling translation APIs.")
-    # If not in cache, proceed with translation
-    translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
-    if translated_text is False:
-        language_name = next((name for name, code in config.LANGUAGES.items() if code == target_language), target_language)
-        return f"Error: Could not translate to {language_name}. Please contact an administrator."
 
-    humanized_text = await gemini_client.humanize_text(translated_text, target_language)
-    if not humanized_text:
-        final_text = translated_text  # Fallback to direct translation
-    else:
-        final_text = humanized_text
+    # 3. If not in cache, proceed with translation, with robust error handling
+    try:
+        # First, get the base translation from Google
+        translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
+        if translated_text is False or not translated_text:
+            logger.error(f"Google Translate failed for target '{target_language}'. Falling back to original text.")
+            return text # Fallback to original English text on failure
 
-    # Add the new translation to the cache
-    cache_manager.add_to_cache(cache_key, final_text)
+        # Then, try to humanize it with Gemini
+        humanized_text = await gemini_client.humanize_text(translated_text, target_language)
+        # If humanization fails or returns nothing, use the base translation
+        if not humanized_text or humanized_text == translated_text:
+            final_text = translated_text
+        else:
+            final_text = humanized_text
 
-    return final_text
+        # 4. Add the new, successful translation to the cache
+        if final_text != text: # Ensure we don't cache the original text on failure
+            cache_manager.add_to_cache(cache_key, final_text)
+
+        return final_text
+
+    except Exception as e:
+        logger.error(f"An unexpected error occurred during translation for target '{target_language}': {e}")
+        return text # Ultimate fallback to original English text
 
 
 async def handle_language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
