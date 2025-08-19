@@ -2,10 +2,6 @@ import logging
 from google.cloud import translate_v2 as translate
 import os
 
-# Make sure to set the GOOGLE_APPLICATION_CREDENTIALS environment variable
-# In a local environment, you can do this by running:
-# export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
-
 def get_google_translate_client():
     """Initializes and returns a Google Translate client."""
     try:
@@ -31,13 +27,19 @@ async def translate_text(text: str, target_language: str, client) -> str | None:
         return text # Return original text if client is not available or text is empty
 
     try:
-        # The free tier of Google Translate API (v2) requires 'source_language'
-        # We can detect it, but it's more reliable to specify it if known.
-        # For this bot, we assume the source is always English.
+        # Assuming the source is always English for this bot
         result = client.translate(text, target_language=target_language, source_language='en')
-        return result['translatedText']
+        translated_text = result.get('translatedText')
+
+        if translated_text:
+            logging.info(f"Successfully translated '{text}' to '{translated_text}' ({target_language})")
+            return translated_text
+        else:
+            logging.warning(f"Google Translate API returned empty result for text: '{text}' and language: '{target_language}'")
+            return None
+
     except Exception as e:
-        logging.error(f"Google Translate API call failed for target language '{target_language}': {e}")
+        logging.error(f"Google Translate API call failed for text '{text}' and target language '{target_language}': {e}")
         return None
 
 async def detect_language(text: str, client) -> str | None:
@@ -56,7 +58,12 @@ async def detect_language(text: str, client) -> str | None:
 
     try:
         result = client.detect_language(text)
-        return result['language']
+        detected_lang = result.get('language')
+        if detected_lang:
+            return detected_lang
+        else:
+            logging.warning(f"Google Translate language detection returned empty result for text: '{text}'")
+            return None
     except Exception as e:
-        logging.error(f"Google Translate language detection failed: {e}")
+        logging.error(f"Google Translate language detection failed for text '{text}': {e}")
         return None
