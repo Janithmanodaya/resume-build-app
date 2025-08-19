@@ -475,6 +475,8 @@ async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_T
     """Sends the template previews to the user."""
     await send_translated_message(update, context, "Please choose a template from the following options:")
 
+    message_sender = update.callback_query.message if update.callback_query else update.message
+
     for template_name in config.TEMPLATES.keys():
         image_path = f"sample/{template_name}.png"
 
@@ -482,7 +484,7 @@ async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_T
             keyboard = [[InlineKeyboardButton("Select this template", callback_data=f"template_{template_name}")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await update.message.reply_photo(
+            await message_sender.reply_photo(
                 photo=open(image_path, 'rb'),
                 reply_markup=reply_markup
             )
