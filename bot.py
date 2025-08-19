@@ -1,5 +1,7 @@
 import logging
 from enum import Enum
+import re
+from translations import SINHALA_TRANSLATIONS
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -140,12 +142,51 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
 
 async def get_sinhala_translation(text: str) -> str:
     """
-    Translates text specifically to Sinhala, with a fallback to an error message.
+    Translates text specifically to Sinhala using a local dictionary, with fallbacks.
     """
-    translated_text = await translation_client.translate_text(text, 'si', google_translate_client)
-    if translated_text is False:
-        return "Error: Could not translate to Sinhala. Please contact an administrator."
-    return translated_text
+    # 1. Check for a direct match in the dictionary
+    if text in SINHALA_TRANSLATIONS:
+        return SINHALA_TRANSLATIONS[text]
+
+    # 2. Handle dynamic strings with variables
+    # --- Invalid or expired code ---
+    if text.startswith("Invalid or expired code."):
+        match = re.search(r"You have (\d+) attempts remaining", text)
+        if match:
+            attempts_left = match.group(1)
+            return f"වලංගු නොවන හෝ කල් ඉකුත් වූ කේතය. ඔබට තවත් අවස්ථා {attempts_left}ක් ඉතිරිව ඇත.\n\nකරුණාකර නැවත උත්සාහ කරන්න හෝ නව කේතයක් ලබා ගැනීමට පරිපාලක අමතන්න."
+
+    # --- Language warning ---
+    if text.startswith("It looks like you provided your details in a language other than English."):
+        match = re.search(r"This is warning (\d+) of 3", text)
+        if match:
+            warnings = match.group(1)
+            return f"ඔබ ඔබගේ විස්තර ඉංග්‍රීසි නොවන වෙනත් භාෂාවකින් ලබා දී ඇති බව පෙනේ. කරුණාකර සියලුම resume තොරතුරු ඉංග්‍රීසි භාෂාවෙන් පමණක් ලබා දෙන්න. මෙය අනතුරු ඇඟවීම {warnings} / 3 වේ."
+
+    # --- Color choice ---
+    if text.startswith("Great! You've chosen"):
+        match = re.search(r"Great! You've chosen (.+)\.", text)
+        if match:
+            color_choice = match.group(1)
+            return f"නියමයි! ඔබ තෝරාගෙන ඇත්තේ {color_choice} යි."
+
+    # --- Template selection ---
+    if text.startswith("You have selected the"):
+        match = re.search(r"You have selected the '(.+)' template\.", text)
+        if match:
+            template_name = match.group(1)
+            return f"ඔබ '{template_name}' අච්චුව තෝරාගෙන ඇත."
+
+    # --- Resume generated ---
+    if text.startswith("Here is your generated resume!"):
+        match = re.search(r"You have (\d+) attempts remaining", text)
+        if match:
+            attempts_left = match.group(1)
+            return f"මෙන්න ඔබගේ සකස් කළ resume එක! ඔබට තවත් අවස්ථා {attempts_left}ක් ඉතිරිව ඇත."
+
+    # 3. Fallback for untranslated strings
+    logger.warning(f"No Sinhala translation found for: '{text}'")
+    return text
 
 
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
@@ -323,12 +364,6 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     upload_text = "📷 Upload Photo"
     skip_text = "➡️ Skip Photo"
 
-    target_language = context.user_data.get('language', 'en')
-    if target_language != 'en':
-        upload_text = await translation_client.translate_text(upload_text, target_language, google_translate_client)
-        skip_text = await translation_client.translate_text(skip_text, target_language, google_translate_client)
-
-
     keyboard = [
         [InlineKeyboardButton(upload_text, callback_data='photo_upload')],
         [InlineKeyboardButton(skip_text, callback_data='photo_skip')]
@@ -384,15 +419,9 @@ async def prompt_for_accent_color(update: Update, context: ContextTypes.DEFAULT_
     colors = {"Blue": "#3498db", "Green": "#2ecc71", "Red": "#e74c3c", "Purple": "#8e44ad"}
     keyboard = []
 
-    target_language = context.user_data.get('language', 'en')
-
     row = []
     for color_name, color_code in colors.items():
-        translated_name = color_name
-        if target_language != 'en':
-            translated_name = await translation_client.translate_text(color_name, target_language, google_translate_client)
-
-        row.append(InlineKeyboardButton(translated_name, callback_data=f"color_{color_name}"))
+        row.append(InlineKeyboardButton(color_name, callback_data=f"color_{color_name}"))
         if len(row) == 2:
             keyboard.append(row)
             row = []
@@ -683,14 +712,8 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         user_data_store.add_user(context.user_data.get('name'))
 
         # Only offer regeneration if the user has attempts left
-        target_language = context.user_data.get('language', 'en')
-
         regenerate_text = "🎨 Regenerate with New Design"
         finish_text = "✅ Finish"
-
-        if target_language != 'en':
-            regenerate_text = await translation_client.translate_text(regenerate_text, target_language, google_translate_client)
-            finish_text = await translation_client.translate_text(finish_text, target_language, google_translate_client)
 
         if attempts_left > 0:
             keyboard = [[InlineKeyboardButton(regenerate_text, callback_data='regenerate_yes')], [InlineKeyboardButton(finish_text, callback_data='regenerate_no')]]
