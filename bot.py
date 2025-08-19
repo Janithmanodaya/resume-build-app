@@ -129,31 +129,37 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
     """
     target_language = context.user_data.get('language', 'en') # Default to English
 
-    # If the target language is English, no need to translate or humanize
-    if target_language == 'en':
-        if update.callback_query:
-            await update.callback_query.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
-        else:
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
-        return
+    final_text = await get_translated_humanized_text(text, target_language)
 
-    # 1. Translate the text
+    # Send the message
+    if update.callback_query:
+        await update.callback_query.message.reply_text(final_text, reply_markup=reply_markup, parse_mode=parse_mode)
+    else:
+        await update.message.reply_text(final_text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+
+async def get_translated_humanized_text(text: str, target_language: str) -> str:
+    """
+    A centralized helper to translate and humanize text, handling all special cases.
+    """
+    if target_language == 'en' or not text:
+        return text
+
+    # 1. Translate
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
     if not translated_text:
-        translated_text = text # Fallback to original text
+        return text # Fallback to original text
 
-    # 2. Humanize the text (unless the language is Sinhala)
-    humanized_text = translated_text # Default to the direct translation
-    if target_language != 'si':
-        humanized_text_from_gemini = await gemini_client.humanize_text(translated_text, target_language)
-        if humanized_text_from_gemini:
-            humanized_text = humanized_text_from_gemini # Use humanized text if successful
+    # 2. Humanize (with exceptions)
+    if target_language == 'si':
+        return translated_text # Bypass Gemini for Sinhala
 
-    # 3. Send the message
-    if update.callback_query:
-        await update.callback_query.message.reply_text(humanized_text, reply_markup=reply_markup, parse_mode=parse_mode)
-    else:
-        await update.message.reply_text(humanized_text, reply_markup=reply_markup, parse_mode=parse_mode)
+    humanized_text = await gemini_client.humanize_text(translated_text, target_language)
+    if not humanized_text:
+        return translated_text # Fallback to direct translation
+
+    return humanized_text
+
 
 async def handle_language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected language and prompts for the verification code."""
@@ -652,14 +658,13 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['generation_attempts'] -= 1
         attempts_left = context.user_data['generation_attempts']
         
-        caption = f"Here is your generated resume! You have {attempts_left} attempts remaining."
-        translated_caption = await translation_client.translate_text(caption, context.user_data.get('language', 'en'), google_translate_client)
-        humanized_caption = await gemini_client.humanize_text(translated_caption, context.user_data.get('language', 'en'))
+        caption_text = f"Here is your generated resume! You have {attempts_left} attempts remaining."
+        final_caption = await get_translated_humanized_text(caption_text, context.user_data.get('language', 'en'))
 
         await message_sender.reply_document(
             document=open(pdf_path, 'rb'),
             filename=f"{context.user_data.get('name', 'resume')}.pdf",
-            caption=humanized_caption
+            caption=final_caption
         )
         os.remove(pdf_path)
 
