@@ -19,6 +19,7 @@ import config
 from aiohttp import web
 import json
 import translation_client
+import translation_cache
 import gemini_client
 
 # Initialize the Google Translate client
@@ -192,6 +193,7 @@ async def get_sinhala_translation(text: str) -> str:
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
     """
     Acts as a router to translate and humanize text based on the target language.
+    It uses a cache for all languages other than English and Sinhala.
     """
     if target_language == 'en' or not text:
         return text
@@ -199,7 +201,15 @@ async def get_translated_humanized_text(text: str, target_language: str) -> str:
     if target_language == 'si':
         return await get_sinhala_translation(text)
 
-    # For all other languages, use the full translation and humanization pipeline
+    # Check the cache first for other languages
+    cached_translation = translation_cache.get_translation(target_language, text)
+    if cached_translation:
+        logging.info(f"Cache hit for '{text}' in '{target_language}'.")
+        return cached_translation
+
+    logging.info(f"Cache miss for '{text}' in '{target_language}'. Fetching from API.")
+
+    # If not in cache, use the full translation and humanization pipeline
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
     if translated_text is False:
         # Find the language name from the code for the error message
@@ -208,8 +218,13 @@ async def get_translated_humanized_text(text: str, target_language: str) -> str:
 
     humanized_text = await gemini_client.humanize_text(translated_text, target_language)
     if not humanized_text:
-        return translated_text  # Fallback to direct translation
+        # If humanization fails, we still have the direct translation
+        # Cache the direct translation
+        translation_cache.add_translation(target_language, text, translated_text)
+        return translated_text
 
+    # Cache the humanized translation
+    translation_cache.add_translation(target_language, text, humanized_text)
     return humanized_text
 
 
@@ -946,6 +961,9 @@ async def on_startup(app: web.Application):
     """
     # Initialize Firebase
     firebase_client.initialize_firebase()
+
+    # Load translation cache
+    translation_cache.load_cache()
 
     # Prepare sample images
     prepare_sample_images()
