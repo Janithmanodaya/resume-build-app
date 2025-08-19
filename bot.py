@@ -3,7 +3,7 @@ from enum import Enum
 import re
 from translations import SINHALA_TRANSLATIONS
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -472,24 +472,41 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     return await send_template_previews(update, context)
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Sends the template previews to the user."""
-    await send_translated_message(update, context, "Please choose a template from the following options:")
-
+    """Sends a media group of template previews and then a keyboard for selection."""
     message_sender = update.callback_query.message if update.callback_query else update.message
 
-    for template_name in config.TEMPLATES.keys():
+    media_group = []
+    template_names = list(config.TEMPLATES.keys())
+
+    for template_name in template_names:
         image_path = f"sample/{template_name}.png"
-
         if os.path.exists(image_path):
-            keyboard = [[InlineKeyboardButton("Select this template", callback_data=f"template_{template_name}")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            await message_sender.reply_photo(
-                photo=open(image_path, 'rb'),
-                reply_markup=reply_markup
-            )
+            media_group.append(InputMediaPhoto(media=open(image_path, 'rb'), caption=template_name.capitalize()))
         else:
             logger.warning(f"Sample image for template '{template_name}' not found.")
+
+    if media_group:
+        await message_sender.reply_media_group(media=media_group)
+
+    # Build the keyboard with two buttons per row
+    keyboard = []
+    row = []
+    for template_name in template_names:
+        row.append(InlineKeyboardButton(template_name.capitalize(), callback_data=f"template_{template_name}"))
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await send_translated_message(
+        update,
+        context,
+        "Please pick a template from the options below.",
+        reply_markup=reply_markup,
+    )
 
     return States.AWAITING_TEMPLATE_SELECTION
 
@@ -501,7 +518,7 @@ async def handle_template_selection(update: Update, context: ContextTypes.DEFAUL
     template_name = query.data.split('_')[1]
     context.user_data['selected_template'] = template_name
 
-    await query.edit_message_caption(caption=f"You have selected the '{template_name}' template.")
+    await query.edit_message_text(text=f"You have selected the '{template_name}' template.")
 
     keyboard = [
         [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],

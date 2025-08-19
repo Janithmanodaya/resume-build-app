@@ -15,7 +15,7 @@ SINHALA_TRANSLATIONS = {
     "No problem. Let's move on to selecting an accent color.": "කිසිම ගැටළුවක් නැහැ. අපි දැන් accent color එකක් තෝරා ගැනීමට යමු.",
     "Photo received! Now, let's pick an accent color.": "ඡායාරූපය ලැබුණා! දැන්, accent color එකක් තෝරා ගනිමු.",
     "Please pick an accent color for your resume:": "කරුණාකර ඔබගේ resume එක සඳහා accent color එකක් තෝරන්න:",
-    "Please choose a template from the following options:": "කරුණාකර පහත විකල්ප වලින් අච්චුවක් තෝරන්න:",
+    "Please pick a template from the options below.": "කරුණාකර පහත විකල්ප වලින් අච්චුවක් තෝරන්න:",
     "Would you like to review or edit your data before we generate the PDF?": "අපි PDF එක සෑදීමට පෙර, ඔබගේ දත්ත සමාලෝචනය කිරීමට හෝ සංස්කරණය කිරීමට ඔබ කැමතිද?",
     "Please select a section to edit, or click 'Generate PDF' if you are ready.": "කරුණාකර සංස්කරණය කිරීමට කොටසක් තෝරන්න, නැතහොත් ඔබ සූදානම් නම් 'Generate PDF' ක්ලික් කරන්න.",
     "Here are your current personal details:\n\n": "මෙන්න ඔබගේ වර්තමාන පුද්ගලික විස්තර:\n\n",
