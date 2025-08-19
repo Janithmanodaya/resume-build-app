@@ -321,18 +321,9 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
 
     await send_translated_message(update, context, extracted_data_message, parse_mode="Markdown")
 
-    upload_text = "📷 Upload Photo"
-    skip_text = "➡️ Skip Photo"
-
-    target_language = context.user_data.get('language', 'en')
-    if target_language != 'en':
-        upload_text = await translation_client.translate_text(upload_text, target_language, google_translate_client)
-        skip_text = await translation_client.translate_text(skip_text, target_language, google_translate_client)
-
-
     keyboard = [
-        [InlineKeyboardButton(upload_text, callback_data='photo_upload')],
-        [InlineKeyboardButton(skip_text, callback_data='photo_skip')]
+        [InlineKeyboardButton("📷 Upload Photo", callback_data='photo_upload')],
+        [InlineKeyboardButton("➡️ Skip Photo", callback_data='photo_skip')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -385,15 +376,9 @@ async def prompt_for_accent_color(update: Update, context: ContextTypes.DEFAULT_
     colors = {"Blue": "#3498db", "Green": "#2ecc71", "Red": "#e74c3c", "Purple": "#8e44ad"}
     keyboard = []
 
-    target_language = context.user_data.get('language', 'en')
-
     row = []
     for color_name, color_code in colors.items():
-        translated_name = color_name
-        if target_language != 'en':
-            translated_name = await translation_client.translate_text(color_name, target_language, google_translate_client)
-
-        row.append(InlineKeyboardButton(translated_name, callback_data=f"color_{color_name}"))
+        row.append(InlineKeyboardButton(color_name, callback_data=f"color_{color_name}"))
         if len(row) == 2:
             keyboard.append(row)
             row = []
@@ -684,19 +669,13 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         user_data_store.add_user(context.user_data.get('name'))
 
         # Only offer regeneration if the user has attempts left
-        target_language = context.user_data.get('language', 'en')
-
-        regenerate_text = "🎨 Regenerate with New Design"
-        finish_text = "✅ Finish"
-
-        if target_language != 'en':
-            regenerate_text = await translation_client.translate_text(regenerate_text, target_language, google_translate_client)
-            finish_text = await translation_client.translate_text(finish_text, target_language, google_translate_client)
-
         if attempts_left > 0:
-            keyboard = [[InlineKeyboardButton(regenerate_text, callback_data='regenerate_yes')], [InlineKeyboardButton(finish_text, callback_data='regenerate_no')]]
+            keyboard = [
+                [InlineKeyboardButton("🎨 Regenerate with New Design", callback_data='regenerate_yes')],
+                [InlineKeyboardButton("✅ Finish", callback_data='regenerate_no')]
+            ]
         else:
-            keyboard = [[InlineKeyboardButton(finish_text, callback_data='regenerate_no')]]
+            keyboard = [[InlineKeyboardButton("✅ Finish", callback_data='regenerate_no')]]
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
