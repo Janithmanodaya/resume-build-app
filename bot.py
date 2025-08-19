@@ -689,6 +689,11 @@ async def health_check_handler(_: web.Request) -> web.Response:
     return web.Response(text="OK")
 
 
+async def root_handler(_: web.Request) -> web.Response:
+    """A simple root endpoint to make site alive."""
+    return web.Response(text="OK")
+
+
 def prepare_sample_images():
     """
     Checks if sample images exist, and if not, creates them by watermarking the original images.
@@ -800,6 +805,7 @@ if __name__ == "__main__":
     # Register webhook and health check handlers
     a_app.router.add_post(f"/{config.TELEGRAM_TOKEN}", telegram_webhook_handler)
     a_app.router.add_get("/health", health_check_handler)
+    a_app.router.add_get("/", root_handler)
 
     # Get port from environment variables
     port = int(os.environ.get("PORT", 8080))
