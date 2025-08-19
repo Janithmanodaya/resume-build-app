@@ -1,5 +1,6 @@
 python-telegram-bot[job-queue]
 google-generativeai
+google-cloud-translate
 weasyprint
 jinja2
 python-dotenv

@@ -14,6 +14,19 @@ if not TELEGRAM_TOKEN or not GEMINI_API_KEY or not SECRET_TOKEN:
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
 # You can add other settings here, like template names
+LANGUAGES = {
+    "English": "en",
+    "Hindi": "hi",
+    "Tamil": "ta",
+    "Sinhala": "si",
+    "Dutch": "nl",
+    "Russian": "ru",
+    "Spanish": "es",
+    "French": "fr",
+    "German": "de",
+    "Chinese": "zh",
+}
+
 TEMPLATES = {
     "modern": "resume_bot/templates/modern.html",
     "creative": "resume_bot/templates/creative.html",

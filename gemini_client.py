@@ -110,3 +110,24 @@ async def parse_resume_from_template(text: str) -> dict | None:
     except Exception as e:
         logging.error(f"Gemini API call failed for data parsing: {e}")
         return None
+
+async def humanize_text(text: str, target_language: str) -> str | None:
+    """
+    Rephrases the given text to be more natural and human-like using the Gemini API.
+    """
+    if not model or not text:
+        return text
+
+    prompt = (
+        f"You are a language expert. Rephrase the following text in '{target_language}' to be more natural, fluent, and human-like. "
+        "Do not change the meaning of the text. Only provide the rephrased text in your response.\n\n"
+        f"**Original Text:**\n{text}\n\n"
+        "**Rephrased Text:**"
+    )
+
+    try:
+        response = await model.generate_content_async(prompt)
+        return response.text.strip()
+    except Exception as e:
+        logging.error(f"Gemini API call failed for text humanization: {e}")
+        return text # Return the original text on failure
