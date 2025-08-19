@@ -486,6 +486,7 @@ async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_T
 
             await message_sender.reply_photo(
                 photo=open(image_path, 'rb'),
+                caption=template_name.capitalize(),
                 reply_markup=reply_markup
             )
         else:
@@ -501,15 +502,29 @@ async def handle_template_selection(update: Update, context: ContextTypes.DEFAUL
     template_name = query.data.split('_')[1]
     context.user_data['selected_template'] = template_name
 
-    await query.edit_message_text(text=f"You have selected the '{template_name}' template.")
+    # Get the user's language preference
+    target_language = context.user_data.get('language', 'en')
 
+    # Create the confirmation text and translate it
+    confirmation_text = "You have selected this template."
+    translated_text = await get_translated_humanized_text(confirmation_text, target_language)
+
+    # Edit the caption of the photo and remove the button
+    await query.edit_message_caption(caption=translated_text, reply_markup=None)
+
+    # Ask the user if they want to review their data
     keyboard = [
         [InlineKeyboardButton("Yes, review my data", callback_data='review_yes')],
         [InlineKeyboardButton("No, generate PDF now", callback_data='review_no')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await send_translated_message(update, context, "Would you like to review or edit your data before we generate the PDF?", reply_markup=reply_markup)
+    await send_translated_message(
+        update,
+        context,
+        "Would you like to review or edit your data before we generate the PDF?",
+        reply_markup=reply_markup
+    )
 
     return States.AWAITING_REVIEW_CHOICE
 
