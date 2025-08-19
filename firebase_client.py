@@ -5,6 +5,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import json
+
 def initialize_firebase():
     """
     Initializes the Firebase Admin SDK using credentials from environment variables.
@@ -12,23 +14,12 @@ def initialize_firebase():
     try:
         # Check if the app is already initialized
         if not firebase_admin._apps:
-            cred_json = {
-                "type": os.environ.get("FIREBASE_TYPE"),
-                "project_id": os.environ.get("FIREBASE_PROJECT_ID"),
-                "private_key_id": os.environ.get("FIREBASE_PRIVATE_KEY_ID"),
-                "private_key": os.environ.get("FIREBASE_PRIVATE_KEY", "").replace('\\n', '\n'),
-                "client_email": os.environ.get("FIREBASE_CLIENT_EMAIL"),
-                "client_id": os.environ.get("FIREBASE_CLIENT_ID"),
-                "auth_uri": os.environ.get("FIREBASE_AUTH_URI"),
-                "token_uri": os.environ.get("FIREBASE_TOKEN_URI"),
-                "auth_provider_x509_cert_url": os.environ.get("FIREBASE_AUTH_PROVIDER_X509_CERT_URL"),
-                "client_x509_cert_url": os.environ.get("FIREBASE_CLIENT_X509_CERT_URL"),
-            }
-
-            # Check if all required credential values are present
-            if not all(cred_json.values()):
-                logger.error("Firebase credentials are not fully set in environment variables.")
+            cred_json_str = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+            if not cred_json_str:
+                logger.error("FIREBASE_CREDENTIALS_JSON environment variable not set.")
                 return
+
+            cred_json = json.loads(cred_json_str)
 
             cred = credentials.Certificate(cred_json)
             firebase_admin.initialize_app(cred, {

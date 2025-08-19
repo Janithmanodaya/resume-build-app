@@ -1,8 +1,10 @@
 python-telegram-bot[job-queue]
 google-generativeai
+google-cloud-translate
 weasyprint
 jinja2
 python-dotenv
 Flask
 aiohttp
 firebase-admin
+Pillow
