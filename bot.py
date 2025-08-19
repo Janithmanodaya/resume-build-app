@@ -138,25 +138,12 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(final_text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 
-async def get_sinhala_translation(text: str) -> str:
-    """
-    Translates text specifically to Sinhala, with a fallback to an error message.
-    """
-    translated_text = await translation_client.translate_text(text, 'si', google_translate_client)
-    if translated_text is False:
-        return "Error: Could not translate to Sinhala. Please contact an administrator."
-    return translated_text
-
-
 async def get_translated_humanized_text(text: str, target_language: str) -> str:
     """
     Acts as a router to translate and humanize text based on the target language.
     """
     if target_language == 'en' or not text:
         return text
-
-    if target_language == 'si':
-        return await get_sinhala_translation(text)
 
     # For all other languages, use the full translation and humanization pipeline
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)

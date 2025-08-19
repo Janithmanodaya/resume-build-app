@@ -1,7 +1,7 @@
 import logging
 from google.cloud import translate_v2 as translate
 import os
-
+import html
 # Make sure to set the GOOGLE_APPLICATION_CREDENTIALS environment variable
 # In a local environment, you can do this by running:
 # export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
@@ -35,7 +35,7 @@ async def translate_text(text: str, target_language: str, client) -> str | None:
         # We can detect it, but it's more reliable to specify it if known.
         # For this bot, we assume the source is always English.
         result = client.translate(text, target_language=target_language, source_language='en')
-        return result['translatedText']
+        return html.unescape(result['translatedText'])
     except Exception as e:
         logging.error(f"Google Translate API call failed for target language '{target_language}': {e}")
         return False
