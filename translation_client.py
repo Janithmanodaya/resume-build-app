@@ -38,7 +38,7 @@ async def translate_text(text: str, target_language: str, client) -> str | None:
         return result['translatedText']
     except Exception as e:
         logging.error(f"Google Translate API call failed for target language '{target_language}': {e}")
-        return None
+        return False
 
 async def detect_language(text: str, client) -> str | None:
     """

@@ -140,11 +140,11 @@ async def send_translated_message(update: Update, context: ContextTypes.DEFAULT_
 
 async def get_sinhala_translation(text: str) -> str:
     """
-    Translates text specifically to Sinhala, with a fallback to the original text.
+    Translates text specifically to Sinhala, with a fallback to an error message.
     """
     translated_text = await translation_client.translate_text(text, 'si', google_translate_client)
-    if not translated_text:
-        return text  # Fallback to original English text if translation fails
+    if translated_text is False:
+        return "Error: Could not translate to Sinhala. Please contact an administrator."
     return translated_text
 
 
@@ -160,8 +160,10 @@ async def get_translated_humanized_text(text: str, target_language: str) -> str:
 
     # For all other languages, use the full translation and humanization pipeline
     translated_text = await translation_client.translate_text(text, target_language, google_translate_client)
-    if not translated_text:
-        return text  # Fallback to original text
+    if translated_text is False:
+        # Find the language name from the code for the error message
+        language_name = next((name for name, code in config.LANGUAGES.items() if code == target_language), target_language)
+        return f"Error: Could not translate to {language_name}. Please contact an administrator."
 
     humanized_text = await gemini_client.humanize_text(translated_text, target_language)
     if not humanized_text:
