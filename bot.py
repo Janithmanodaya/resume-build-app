@@ -121,7 +121,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await send_translated_message(
         update,
         context,
-        "Please select your language:",
+        "👋 Please select your language:",
         reply_markup=reply_markup
     )
     return States.AWAITING_LANGUAGE_SELECTION
@@ -248,7 +248,7 @@ async def request_verification_code(update: Update, context: ContextTypes.DEFAUL
     await send_translated_message(
         update,
         context,
-        "Welcome to the Resume Bot!\n\n"
+        "🤖 Welcome to the Resume Bot!\n\n"
         "Please enter your verification code to begin.",
         reply_markup=ReplyKeyboardRemove()
     )
@@ -272,7 +272,7 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
         await send_translated_message(
             update,
             context,
-            "Verification successful! Your session has started.\n\n"
+            "✅ Verification successful! Your session has started.\n\n"
             "You have 5 chances to generate a PDF resume."
         )
 
@@ -294,7 +294,7 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
             await send_translated_message(
                 update,
                 context,
-                f"Invalid or expired code. You have {attempts_left} attempts remaining.\n\n"
+                f"❌ Invalid or expired code. You have {attempts_left} attempts remaining.\n\n"
                 "Please try again or contact the admin to get a new code.",
                 reply_markup=reply_markup
             )
@@ -303,7 +303,7 @@ async def handle_verification_code(update: Update, context: ContextTypes.DEFAULT
             await send_translated_message(
                 update,
                 context,
-                "You have used all your verification attempts. For security reasons, this session has been terminated. Please /start again later."
+                "🚫 You have used all your verification attempts. For security reasons, this session has been terminated. Please /start again later."
             )
             return await finish_conversation(update, context)
 
@@ -327,7 +327,7 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
             await send_translated_message(
                 update,
                 context,
-                "You have repeatedly submitted information in a language other than English. "
+                "🚫 You have repeatedly submitted information in a language other than English. "
                 "For security reasons, this session has been terminated. Please /start again and follow the instructions."
             )
             return await finish_conversation(update, context)
@@ -335,14 +335,14 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
             await send_translated_message(
                 update,
                 context,
-                f"It looks like you provided your details in a language other than English. "
+                f"⚠️ It looks like you provided your details in a language other than English. "
                 f"Please provide all resume information in English only. This is warning {warnings} of 3."
             )
             return States.AWAITING_TEMPLATE_INPUT
     # --- End Language Check ---
 
 
-    await send_translated_message(update, context, "Thank you. I am now processing your information with AI. This may take a moment...")
+    await send_translated_message(update, context, "⏳ Thank you. I am now processing your information with AI. This may take a moment...")
 
     # Call the new Gemini client function to parse the template
     parsed_data = await gemini_client.parse_resume_from_template(user_input)
@@ -351,7 +351,7 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
         await send_translated_message(
             update,
             context,
-            "I'm sorry, I couldn't extract the information from your text. "
+            "😥 I'm sorry, I couldn't extract the information from your text. "
             "Please try filling out the template again carefully."
         )
         return States.AWAITING_TEMPLATE_INPUT
@@ -361,7 +361,7 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['language'] = 'en'
 
     # Show the extracted data to the user
-    extracted_data_message = "Here is the data I extracted from your template:\n\n"
+    extracted_data_message = "📄 Here is the data I extracted from your template:\n\n"
     for key, value in parsed_data.items():
         emoji = EMOJI_MAP.get(key, "🔹")
         if value:
@@ -390,7 +390,7 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
     await send_translated_message(
         update,
         context,
-        "Would you like to add a profile photo?",
+        "🖼️ Would you like to add a profile photo?",
         reply_markup=reply_markup,
     )
     return States.AWAITING_PHOTO_CHOICE
@@ -403,7 +403,7 @@ async def handle_photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
     choice = query.data
 
     if choice == 'photo_upload':
-        await send_translated_message(update, context, "Okay, please upload your profile photo now.", reply_markup=ReplyKeyboardRemove())
+        await send_translated_message(update, context, "📸 Okay, please upload your profile photo now.", reply_markup=ReplyKeyboardRemove())
         return States.UPLOADING_PHOTO
     else:  # 'photo_skip'
         return await skip_photo(update, context)
@@ -411,7 +411,7 @@ async def handle_photo_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Skips the photo upload and moves to accent color selection."""
     context.user_data["photo_path"] = None
-    await send_translated_message(update, context, "No problem. Let's move on to selecting an accent color.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "👍 No problem. Let's move on to selecting an accent color.", reply_markup=ReplyKeyboardRemove())
     return await prompt_for_accent_color(update, context)
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -428,7 +428,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     context.user_data["photo_path"] = file_path
 
-    await send_translated_message(update, context, "Photo received! Now, let's pick an accent color.")
+    await send_translated_message(update, context, "🖼️ Photo received! Now, let's pick an accent color.")
     return await prompt_for_accent_color(update, context)
 
 async def prompt_for_accent_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -449,7 +449,7 @@ async def prompt_for_accent_color(update: Update, context: ContextTypes.DEFAULT_
     await send_translated_message(
         update,
         context,
-        "Please pick an accent color for your resume:",
+        "🎨 Please pick an accent color for your resume:",
         reply_markup=reply_markup,
     )
     return States.AWAITING_ACCENT_COLOR
@@ -469,7 +469,7 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     color_choice = query.data.split('_')[1]
     context.user_data["accent_color"] = color_map[color_choice]
 
-    await query.edit_message_text(text=f"Great! You've chosen {color_choice}.")
+    await query.edit_message_text(text=f"🎨 Great! You've chosen {color_choice}.")
 
     return await send_template_previews(update, context)
 
@@ -479,7 +479,7 @@ async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_T
 
     # Temporarily set the language to the original language for the instructional message
     context.user_data['language'] = original_language
-    await send_translated_message(update, context, "Please choose a template from the following options:")
+    await send_translated_message(update, context, "📄 Please choose a template from the following options:")
 
     # Switch back to English for the rest of the interaction
     context.user_data['language'] = 'en'
@@ -515,7 +515,7 @@ async def handle_template_selection(update: Update, context: ContextTypes.DEFAUL
     target_language = context.user_data.get('language', 'en')
 
     # Create the confirmation text and translate it
-    confirmation_text = "You have selected this template."
+    confirmation_text = "✅ You have selected this template."
     translated_text = await get_translated_humanized_text(confirmation_text, target_language)
 
     # Edit the caption of the photo and remove the button
@@ -531,7 +531,7 @@ async def handle_template_selection(update: Update, context: ContextTypes.DEFAUL
     await send_translated_message(
         update,
         context,
-        "Would you like to review or edit your data before we generate the PDF?",
+        "🧐 Would you like to review or edit your data before we generate the PDF?",
         reply_markup=reply_markup
     )
 
@@ -566,7 +566,7 @@ async def show_review_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    message = "Please select a section to edit, or click 'Generate PDF' if you are ready."
+    message = "✍️ Please select a section to edit, or click 'Generate PDF' if you are ready."
 
     await send_translated_message(update, context, message, reply_markup=reply_markup)
 
@@ -588,7 +588,7 @@ async def edit_personal_details(update: Update, context: ContextTypes.DEFAULT_TY
         "NIC Number": context.user_data.get("nic_number"),
     }
 
-    message = "Here are your current personal details:\n\n"
+    message = "👤 Here are your current personal details:\n\n"
     for key, value in personal_details.items():
         message += f"**{key}:** {value or 'Not set'}\n"
 
@@ -605,7 +605,7 @@ async def edit_experience(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await query.answer()
 
     experience = context.user_data.get("experience", [])
-    message = "Here is your current experience:\n\n"
+    message = "💼 Here is your current experience:\n\n"
     if experience:
         message += "\n".join(f"- {exp}" for exp in experience)
     else:
@@ -624,7 +624,7 @@ async def edit_education(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await query.answer()
 
     education = context.user_data.get("education", [])
-    message = "Here is your current education:\n\n"
+    message = "🎓 Here is your current education:\n\n"
     if education:
         message += "\n".join(f"- {edu}" for edu in education)
     else:
@@ -643,7 +643,7 @@ async def edit_skills(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await query.answer()
 
     skills = context.user_data.get("skills", [])
-    message = "Here are your current skills:\n\n"
+    message = "🛠️ Here are your current skills:\n\n"
     if skills:
         message += "\n".join(f"- {s['name']} (Rating: {s['rating']})" for s in skills)
     else:
@@ -659,7 +659,7 @@ async def edit_skills(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 async def handle_edited_personal_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited personal details."""
     if update.message.text.lower() in ['yes', 'skip']:
-        await send_translated_message(update, context, "No changes made to personal details.", reply_markup=ReplyKeyboardRemove())
+        await send_translated_message(update, context, "👍 No changes made to personal details.", reply_markup=ReplyKeyboardRemove())
         return await show_review_menu(update, context)
 
     # This is a simplified parser. A more robust solution would be to use the AI again.
@@ -670,33 +670,33 @@ async def handle_edited_personal_details(update: Update, context: ContextTypes.D
             key = key.strip().lower().replace(' ', '_')
             context.user_data[key] = value.strip()
 
-    await send_translated_message(update, context, "Personal details updated.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "✅ Personal details updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_experience(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited experience."""
     if update.message.text.lower() in ['yes', 'skip']:
-        await send_translated_message(update, context, "No changes made to experience.", reply_markup=ReplyKeyboardRemove())
+        await send_translated_message(update, context, "👍 No changes made to experience.", reply_markup=ReplyKeyboardRemove())
         return await show_review_menu(update, context)
 
     context.user_data['experience'] = [exp.strip() for exp in update.message.text.split('\n')]
-    await send_translated_message(update, context, "Experience updated.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "✅ Experience updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_education(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited education."""
     if update.message.text.lower() in ['yes', 'skip']:
-        await send_translated_message(update, context, "No changes made to education.", reply_markup=ReplyKeyboardRemove())
+        await send_translated_message(update, context, "👍 No changes made to education.", reply_markup=ReplyKeyboardRemove())
         return await show_review_menu(update, context)
 
     context.user_data['education'] = [edu.strip() for edu in update.message.text.split('\n')]
-    await send_translated_message(update, context, "Education updated.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "✅ Education updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 async def handle_edited_skills(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handles the user's edited skills."""
     if update.message.text.lower() in ['yes', 'skip']:
-        await send_translated_message(update, context, "No changes made to skills.", reply_markup=ReplyKeyboardRemove())
+        await send_translated_message(update, context, "👍 No changes made to skills.", reply_markup=ReplyKeyboardRemove())
         return await show_review_menu(update, context)
 
     skills = []
@@ -705,7 +705,7 @@ async def handle_edited_skills(update: Update, context: ContextTypes.DEFAULT_TYP
             name, rating = line.split(',', 1)
             skills.append({'name': name.strip(), 'rating': int(rating.strip())})
     context.user_data['skills'] = skills
-    await send_translated_message(update, context, "Skills updated.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "✅ Skills updated.", reply_markup=ReplyKeyboardRemove())
     return await show_review_menu(update, context)
 
 
@@ -718,12 +718,12 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         await send_translated_message(
             update,
             context,
-            "You have no PDF generation attempts left. Please /start a new session.",
+            "🚫 You have no PDF generation attempts left. Please /start a new session.",
             reply_markup=ReplyKeyboardRemove()
         )
         return await finish_conversation(update, context)
 
-    await send_translated_message(update, context, "I'm now generating your resume...")
+    await send_translated_message(update, context, "⏳ I'm now generating your resume...")
 
     logger.info(f"Final user data: {context.user_data}")
     
@@ -739,7 +739,7 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['generation_attempts'] -= 1
         attempts_left = context.user_data['generation_attempts']
         
-        caption_text = f"Here is your generated resume! You have {attempts_left} attempts remaining."
+        caption_text = f"🎉 Here is your generated resume! You have {attempts_left} attempts remaining."
         final_caption = await get_translated_humanized_text(caption_text, context.user_data.get('language', 'en'))
 
         await message_sender.reply_document(
@@ -769,13 +769,13 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         await send_translated_message(
             update,
             context,
-            "What would you like to do next?",
+            "🤔 What would you like to do next?",
             reply_markup=reply_markup,
         )
         return States.AWAITING_REGENERATION
 
     else:
-        await send_translated_message(update, context, "Sorry, something went wrong while generating your PDF.")
+        await send_translated_message(update, context, "😥 Sorry, something went wrong while generating your PDF.")
         # Clean up and end conversation on failure
         return await finish_conversation(update, context)
 
@@ -789,13 +789,13 @@ async def handle_regeneration_choice(update: Update, context: ContextTypes.DEFAU
 
     if choice == 'regenerate_yes':
         if context.user_data.get('generation_attempts', 0) > 0:
-            await send_translated_message(update, context, "Let's pick a new design.")
+            await send_translated_message(update, context, "🎨 Let's pick a new design.")
             return await send_template_previews(update, context)
         else:
             await send_translated_message(
                 update,
                 context,
-                "You have no more PDF generation attempts left. Please /start a new session to continue."
+                "🚫 You have no more PDF generation attempts left. Please /start a new session to continue."
             )
             return await finish_conversation(update, context)
     else:  # 'regenerate_no'
@@ -832,21 +832,21 @@ async def timeout_cleanup(context: ContextTypes.DEFAULT_TYPE):
     # We can't use the helper here as we don't have the update object, so we send in English.
     await context.bot.send_message(
         chat_id=context.job.chat_id,
-        text="Your session has timed out due to 6 hours of inactivity. Please /start again."
+        text="⏰ Your session has timed out due to 6 hours of inactivity. Please /start again."
     )
     await _cleanup_session(context)
 
 
 async def finish_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Clears user data and ends the conversation."""
-    await send_translated_message(update, context, "Great! Feel free to start over any time with /start.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "👍 Great! Feel free to start over any time with /start.", reply_markup=ReplyKeyboardRemove())
     await _cleanup_session(context)
     return ConversationHandler.END
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
-    await send_translated_message(update, context, "Operation cancelled.", reply_markup=ReplyKeyboardRemove())
+    await send_translated_message(update, context, "🛑 Operation cancelled.", reply_markup=ReplyKeyboardRemove())
     await _cleanup_session(context)
     return ConversationHandler.END
 
@@ -856,7 +856,7 @@ async def invalid_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_translated_message(
         update,
         context,
-        "Sorry, I was expecting different input. Please follow the instructions or type /cancel to start over."
+        "🤔 Sorry, I was expecting different input. Please follow the instructions or type /cancel to start over."
     )
     # This does not change the state
     return
@@ -870,7 +870,7 @@ async def fallback_callback_handler(update: Update, context: ContextTypes.DEFAUL
     await send_translated_message(
         update,
         context,
-        "Something went wrong! This button is not active. Please type /start to begin again."
+        "🤯 Something went wrong! This button is not active. Please type /start to begin again."
     )
     return ConversationHandler.END
 
