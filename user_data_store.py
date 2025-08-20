@@ -1,35 +1,19 @@
-import json
-import os
+import firebase_client
 import logging
 
 logger = logging.getLogger(__name__)
 
-DATA_FILE = 'generated_users.json'
-
-def _load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return []
-    return []
-
-def _save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-def add_user(username: str):
-    """Adds a username to the list of users who have generated a PDF."""
-    if not username:
+def add_user(name: str, mobile: str):
+    """Adds a user's name and mobile number to the Firebase Realtime Database."""
+    if not name or not mobile:
         return
 
-    data = _load_data()
-    if username not in data:
-        data.append(username)
-        _save_data(data)
-        logger.info(f"Added user '{username}' to the data store.")
+    success = firebase_client.store_user_data(name, mobile)
+    if success:
+        logger.info(f"Stored user '{name}' in Firebase.")
+    else:
+        logger.error(f"Failed to store user '{name}' in Firebase.")
 
 def get_all_users() -> list[str]:
-    """Returns a list of all users who have generated a PDF."""
-    return _load_data()
+    """Returns a list of all users from the Firebase Realtime Database."""
+    return firebase_client.get_all_users()

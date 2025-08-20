@@ -235,6 +235,7 @@ async def handle_language_selection(update: Update, context: ContextTypes.DEFAUL
 
     language_code = query.data.split('_')[1]
     context.user_data['language'] = language_code
+    context.user_data['original_language'] = language_code
     context.user_data['verification_attempts'] = 3
 
     await query.edit_message_text(text=f"Language set to {list(config.LANGUAGES.keys())[list(config.LANGUAGES.values()).index(language_code)]}.")
@@ -357,6 +358,7 @@ async def handle_template_input(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Store the parsed data in user_data
     context.user_data.update(parsed_data)
+    context.user_data['language'] = 'en'
 
     # Show the extracted data to the user
     extracted_data_message = "Here is the data I extracted from your template:\n\n"
@@ -473,7 +475,14 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def send_template_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Sends the template previews to the user."""
+    original_language = context.user_data.get('original_language', 'en')
+
+    # Temporarily set the language to the original language for the instructional message
+    context.user_data['language'] = original_language
     await send_translated_message(update, context, "Please choose a template from the following options:")
+
+    # Switch back to English for the rest of the interaction
+    context.user_data['language'] = 'en'
 
     message_sender = update.callback_query.message if update.callback_query else update.message
 
@@ -741,7 +750,10 @@ async def generate_and_send_pdf(update: Update, context: ContextTypes.DEFAULT_TY
         os.remove(pdf_path)
 
         # Log the user who generated the PDF
-        user_data_store.add_user(context.user_data.get('name'))
+        user_data_store.add_user(
+            name=context.user_data.get('name'),
+            mobile=context.user_data.get('phone')
+        )
 
         # Only offer regeneration if the user has attempts left
         regenerate_text = "🎨 Regenerate with New Design"

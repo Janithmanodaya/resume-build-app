@@ -65,3 +65,53 @@ def verify_and_delete_code(code: str) -> bool:
     except Exception as e:
         logger.error(f"Error during Firebase code verification: {e}")
         return False
+
+
+def store_user_data(name: str, mobile: str) -> bool:
+    """
+    Stores user data (name and mobile) in the 'verified_users' path in Firebase Realtime Database.
+
+    Args:
+        name: The user's name.
+        mobile: The user's mobile number.
+
+    Returns:
+        True if the data was stored successfully, False otherwise.
+    """
+    if not firebase_admin._apps:
+        logger.warning("Firebase not initialized. Cannot store user data.")
+        return False
+
+    try:
+        ref = db.reference('verified_users')
+        ref.push({
+            'name': name,
+            'mobile': mobile
+        })
+        logger.info(f"Stored user data for '{name}' successfully.")
+        return True
+    except Exception as e:
+        logger.error(f"Error storing user data to Firebase: {e}")
+        return False
+
+
+def get_all_users() -> list[str]:
+    """
+    Retrieves a list of all users from the 'verified_users' path in Firebase Realtime Database.
+
+    Returns:
+        A list of strings, where each string is a user's name and mobile number.
+    """
+    if not firebase_admin._apps:
+        logger.warning("Firebase not initialized. Cannot get user data.")
+        return []
+
+    try:
+        ref = db.reference('verified_users')
+        users = ref.get()
+        if users:
+            return [f"{user.get('name', 'N/A')} - {user.get('mobile', 'N/A')}" for user in users.values()]
+        return []
+    except Exception as e:
+        logger.error(f"Error getting user data from Firebase: {e}")
+        return []
